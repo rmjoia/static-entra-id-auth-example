@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Strategy 2026&ndash;2028 &mdash; Contoso</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body class="bg-light">
+  <nav class="navbar navbar-expand-lg navbar-dark sticky-top app-navbar">
+    <div class="container">
+      <a class="navbar-brand fw-bold" href="/">
+        <i class="bi bi-graph-up-arrow me-2"></i>Contoso<span class="badge text-bg-warning ms-2 align-middle small">Standard tier</span>
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="mainNav">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item"><a class="nav-link" href="/">Overview</a></li>
+          <li class="nav-item"><a class="nav-link" href="/report.html">Annual Report</a></li>
+          <li class="nav-item"><a class="nav-link active" aria-current="page" href="/strategy.html">Strategy</a></li>
+        </ul>
+        <div id="user-area" class="d-flex"></div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+      <div>
+        <span class="badge text-bg-warning-subtle text-warning-emphasis border border-warning-subtle mb-2">
+          <i class="bi bi-shield-lock-fill me-1"></i>Confidential &middot; Board &amp; Invited Stakeholders Only
+        </span>
+        <h1 class="h2 mb-0">Strategy 2026&ndash;2028</h1>
+        <p class="text-muted mb-0">Three-year plan, key bets, and what we are explicitly not doing.</p>
+      </div>
+      <div class="text-end mt-3 mt-md-0">
+        <span class="text-muted small d-block">North-star target</span>
+        <strong>$150M ARR by end of 2028</strong>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-md-6 col-xl-3">
+        <div class="card stat-card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="text-muted small text-uppercase">Target ARR (2028)</div>
+            <div class="display-6 fw-semibold">$150M</div>
+            <div class="progress mt-2" role="progressbar" aria-label="ARR progress" aria-valuenow="41" aria-valuemin="0" aria-valuemax="100" style="height: 6px;">
+              <div class="progress-bar bg-primary" style="width: 41%"></div>
+            </div>
+            <small class="text-muted">$61.7M today &middot; 41% of target</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 col-xl-3">
+        <div class="card stat-card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="text-muted small text-uppercase">Target NRR</div>
+            <div class="display-6 fw-semibold">125%</div>
+            <div class="progress mt-2" role="progressbar" aria-label="NRR progress" aria-valuenow="94" aria-valuemin="0" aria-valuemax="100" style="height: 6px;">
+              <div class="progress-bar bg-success" style="width: 94%"></div>
+            </div>
+            <small class="text-muted">118% today &middot; 7pp to go</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 col-xl-3">
+        <div class="card stat-card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="text-muted small text-uppercase">Target gross margin</div>
+            <div class="display-6 fw-semibold">80%</div>
+            <div class="progress mt-2" role="progressbar" aria-label="GM progress" aria-valuenow="93" aria-valuemin="0" aria-valuemax="100" style="height: 6px;">
+              <div class="progress-bar bg-info" style="width: 93%"></div>
+            </div>
+            <small class="text-muted">74% today &middot; 6pp to go</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 col-xl-3">
+        <div class="card stat-card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="text-muted small text-uppercase">Partner-sourced ARR</div>
+            <div class="display-6 fw-semibold">25%</div>
+            <div class="progress mt-2" role="progressbar" aria-label="Partner ARR progress" aria-valuenow="24" aria-valuemin="0" aria-valuemax="100" style="height: 6px;">
+              <div class="progress-bar bg-warning" style="width: 24%"></div>
+            </div>
+            <small class="text-muted">6% today &middot; channel build needed</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <h2 class="h6 mb-3">Strategic pillar maturity</h2>
+            <canvas id="pillarChart" height="200"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <h2 class="h6 mb-3">Projected ARR trajectory</h2>
+            <canvas id="arrChart" height="200"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <h2 class="h5 mb-3">Strategic pillars</h2>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div class="p-3 rounded bg-primary-subtle h-100">
+              <div class="d-flex align-items-center mb-2">
+                <div class="icon-circle bg-primary text-white me-2"><i class="bi bi-layers"></i></div>
+                <strong>Platform consolidation</strong>
+              </div>
+              <p class="small text-muted mb-0">
+                Merge the three product lines into a single workspace with shared
+                identity, billing, and data. Unified workspace launches Q3 2026.
+              </p>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="p-3 rounded bg-success-subtle h-100">
+              <div class="d-flex align-items-center mb-2">
+                <div class="icon-circle bg-success text-white me-2"><i class="bi bi-binoculars"></i></div>
+                <strong>Vertical depth</strong>
+              </div>
+              <p class="small text-muted mb-0">
+                Double down on the two verticals where we have measurable NRR advantage;
+                deprioritize the long tail.
+              </p>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="p-3 rounded bg-warning-subtle h-100">
+              <div class="d-flex align-items-center mb-2">
+                <div class="icon-circle bg-warning text-white me-2"><i class="bi bi-cpu"></i></div>
+                <strong>Operational leverage</strong>
+              </div>
+              <p class="small text-muted mb-0">
+                Drive gross margin from 74% to 80% via infrastructure consolidation and
+                tier-2 support automation.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-lg-7">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <h2 class="h6 mb-3">Key bets</h2>
+            <ul class="list-group list-group-flush">
+              <li class="list-group-item d-flex align-items-center px-0">
+                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                Launch unified workspace by Q3 2026
+              </li>
+              <li class="list-group-item d-flex align-items-center px-0">
+                <i class="bi bi-circle text-muted me-2"></i>
+                Build or acquire a connector marketplace
+              </li>
+              <li class="list-group-item d-flex align-items-center px-0">
+                <i class="bi bi-circle text-muted me-2"></i>
+                Establish a partner channel contributing 25% of new ARR by 2028
+              </li>
+              <li class="list-group-item d-flex align-items-center px-0">
+                <i class="bi bi-circle text-muted me-2"></i>
+                Reach 80% gross margin via infra consolidation
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-5">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <h2 class="h6 mb-3">What we are <em>not</em> doing</h2>
+            <ul class="text-muted mb-0">
+              <li>No Fortune-500 enterprise pursuit this period.</li>
+              <li>No mobile-first product line.</li>
+              <li>No expansion outside our two priority verticals.</li>
+              <li>No hardware play; cloud-only remains the platform bet.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="app-footer py-4">
+    <div class="container text-center text-muted small">
+      &copy; Contoso (sample project) &middot; Do not redistribute
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="/auth.js"></script>
+  <script>
+    const blue = "#0d6efd";
+    const teal = "#20c997";
+    const grid = "rgba(0,0,0,0.06)";
+
+    new Chart(document.getElementById("pillarChart"), {
+      type: "radar",
+      data: {
+        labels: ["Platform", "Vertical depth", "Ops leverage", "Channel", "Talent", "Brand"],
+        datasets: [
+          {
+            label: "Today",
+            data: [4, 6, 5, 2, 6, 5],
+            borderColor: "#adb5bd",
+            backgroundColor: "rgba(173,181,189,0.25)"
+          },
+          {
+            label: "2028 target",
+            data: [9, 9, 8, 8, 8, 7],
+            borderColor: blue,
+            backgroundColor: "rgba(13,110,253,0.2)"
+          }
+        ]
+      },
+      options: {
+        animation: { duration: 1200 },
+        scales: { r: { min: 0, max: 10, ticks: { stepSize: 2 } } },
+        plugins: { legend: { position: "bottom" } }
+      }
+    });
+
+    new Chart(document.getElementById("arrChart"), {
+      type: "line",
+      data: {
+        labels: ["2024", "2025", "2026", "2027", "2028"],
+        datasets: [
+          {
+            label: "ARR ($M)",
+            data: [48.2, 61.7, 84, 115, 150],
+            borderColor: teal,
+            backgroundColor: "rgba(32,201,151,0.15)",
+            tension: 0.35,
+            fill: true,
+            pointRadius: 5
+          }
+        ]
+      },
+      options: {
+        animation: { duration: 1300, easing: "easeOutQuart" },
+        scales: { y: { grid: { color: grid }, beginAtZero: true }, x: { grid: { display: false } } },
+        plugins: { legend: { position: "bottom" } }
+      }
+    });
+  </script>
+</body>
+</html>

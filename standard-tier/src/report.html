@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Annual Report 2025 &mdash; Contoso</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body class="bg-light">
+  <nav class="navbar navbar-expand-lg navbar-dark sticky-top app-navbar">
+    <div class="container">
+      <a class="navbar-brand fw-bold" href="/">
+        <i class="bi bi-graph-up-arrow me-2"></i>Contoso<span class="badge text-bg-warning ms-2 align-middle small">Standard tier</span>
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="mainNav">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item"><a class="nav-link" href="/">Overview</a></li>
+          <li class="nav-item"><a class="nav-link active" aria-current="page" href="/report.html">Annual Report</a></li>
+          <li class="nav-item"><a class="nav-link" href="/strategy.html">Strategy</a></li>
+        </ul>
+        <div id="user-area" class="d-flex"></div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+      <div>
+        <span class="badge text-bg-warning-subtle text-warning-emphasis border border-warning-subtle mb-2">
+          <i class="bi bi-shield-lock-fill me-1"></i>Confidential &middot; Board &amp; Invited Stakeholders Only
+        </span>
+        <h1 class="h2 mb-0">Annual Report 2025</h1>
+        <p class="text-muted mb-0">Year-end performance across financial and operational dimensions.</p>
+      </div>
+      <div class="text-end mt-3 mt-md-0">
+        <span class="text-muted small d-block">Report period</span>
+        <strong>Jan&nbsp;1, 2025 &ndash; Dec&nbsp;31, 2025</strong>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-sm-6 col-lg-3">
+        <div class="card stat-card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <div class="text-muted small text-uppercase">Revenue</div>
+                <div class="display-6 fw-semibold">$61.7M</div>
+              </div>
+              <div class="stat-icon bg-primary-subtle text-primary"><i class="bi bi-cash-coin"></i></div>
+            </div>
+            <div class="mt-2"><span class="badge text-bg-success-subtle text-success-emphasis"><i class="bi bi-arrow-up"></i> +28% YoY</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="card stat-card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <div class="text-muted small text-uppercase">Gross margin</div>
+                <div class="display-6 fw-semibold">74%</div>
+              </div>
+              <div class="stat-icon bg-success-subtle text-success"><i class="bi bi-percent"></i></div>
+            </div>
+            <div class="mt-2"><span class="badge text-bg-success-subtle text-success-emphasis"><i class="bi bi-arrow-up"></i> +2pp</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="card stat-card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <div class="text-muted small text-uppercase">Operating income</div>
+                <div class="display-6 fw-semibold">$9.4M</div>
+              </div>
+              <div class="stat-icon bg-info-subtle text-info"><i class="bi bi-bar-chart-line"></i></div>
+            </div>
+            <div class="mt-2"><span class="badge text-bg-success-subtle text-success-emphasis"><i class="bi bi-arrow-up"></i> +54%</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="card stat-card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <div class="text-muted small text-uppercase">Cash on hand</div>
+                <div class="display-6 fw-semibold">$31.5M</div>
+              </div>
+              <div class="stat-icon bg-warning-subtle text-warning"><i class="bi bi-piggy-bank"></i></div>
+            </div>
+            <div class="mt-2"><span class="badge text-bg-success-subtle text-success-emphasis"><i class="bi bi-arrow-up"></i> +43%</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-lg-8">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h2 class="h6 mb-0">Quarterly revenue &middot; 2024 vs 2025</h2>
+              <span class="text-muted small">$ millions</span>
+            </div>
+            <canvas id="revenueChart" height="120"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <h2 class="h6 mb-3">Revenue by region</h2>
+            <canvas id="regionChart" height="220"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-lg-7">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <h2 class="h6 mb-3">Revenue by product line</h2>
+            <canvas id="productChart" height="160"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-5">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <h2 class="h6 mb-3">Operational highlights</h2>
+            <ul class="list-group list-group-flush">
+              <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                Net revenue retention <span class="fw-semibold">118% <small class="text-success">(+9pp)</small></span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                Average deal size <span class="fw-semibold">$58K <small class="text-success">(+38%)</small></span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                Customers <span class="fw-semibold">537 <small class="text-success">(+30%)</small></span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                Engineering headcount <span class="fw-semibold">+32%</span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                Sales headcount <span class="fw-semibold">+24%</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <h2 class="h6 mb-3">Risks and challenges</h2>
+        <p class="text-muted mb-0">
+          Sample placeholder content &mdash; in a real report this section would cover market risk,
+          customer concentration, regulatory exposure, and key dependencies. Anything beyond this
+          is fictional and exists only to make the dashboard render.
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="app-footer py-4">
+    <div class="container text-center text-muted small">
+      &copy; Contoso (sample project) &middot; Do not redistribute
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="/auth.js"></script>
+  <script>
+    const css = getComputedStyle(document.documentElement);
+    const blue = css.getPropertyValue("--bs-primary") || "#0d6efd";
+    const teal = "#20c997";
+    const grid = "rgba(0,0,0,0.06)";
+
+    new Chart(document.getElementById("revenueChart"), {
+      type: "line",
+      data: {
+        labels: ["Q1", "Q2", "Q3", "Q4"],
+        datasets: [
+          {
+            label: "2024",
+            data: [10.4, 11.7, 12.5, 13.6],
+            borderColor: "#adb5bd",
+            backgroundColor: "rgba(173,181,189,0.1)",
+            tension: 0.35,
+            fill: true
+          },
+          {
+            label: "2025",
+            data: [13.1, 14.8, 16.0, 17.8],
+            borderColor: blue,
+            backgroundColor: "rgba(13,110,253,0.12)",
+            tension: 0.35,
+            fill: true
+          }
+        ]
+      },
+      options: {
+        animation: { duration: 1200, easing: "easeOutQuart" },
+        scales: { y: { grid: { color: grid }, beginAtZero: true }, x: { grid: { display: false } } },
+        plugins: { legend: { position: "bottom" } }
+      }
+    });
+
+    new Chart(document.getElementById("regionChart"), {
+      type: "doughnut",
+      data: {
+        labels: ["North America", "EMEA", "APAC", "LATAM"],
+        datasets: [{
+          data: [34.8, 17.4, 7.1, 2.4],
+          backgroundColor: [blue, teal, "#ffc107", "#fd7e14"],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        animation: { animateScale: true, duration: 1100 },
+        cutout: "62%",
+        plugins: { legend: { position: "bottom" } }
+      }
+    });
+
+    new Chart(document.getElementById("productChart"), {
+      type: "bar",
+      data: {
+        labels: ["Measure", "Pulse", "Atlas", "Beacon", "Forge"],
+        datasets: [
+          { label: "2024", data: [22, 14, 8, 3, 1], backgroundColor: "#adb5bd" },
+          { label: "2025", data: [27, 19, 10, 4, 1.7], backgroundColor: blue }
+        ]
+      },
+      options: {
+        animation: { duration: 1100, easing: "easeOutQuart" },
+        scales: { y: { grid: { color: grid }, beginAtZero: true }, x: { grid: { display: false } } },
+        plugins: { legend: { position: "bottom" } }
+      }
+    });
+  </script>
+</body>
+</html>

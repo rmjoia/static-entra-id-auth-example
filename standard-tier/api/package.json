@@ -1,0 +1,12 @@
+{
+  "name": "swa-entra-roles-api",
+  "version": "1.0.0",
+  "description": "Azure SWA role-assignment function. Maps Entra ID group membership to SWA roles at sign-in.",
+  "main": "src/functions/*.js",
+  "scripts": {
+    "start": "func start"
+  },
+  "dependencies": {
+    "@azure/functions": "^4.5.0"
+  }
+}
