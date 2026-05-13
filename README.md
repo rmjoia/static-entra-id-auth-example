@@ -178,9 +178,13 @@ Then:
 
 Then:
 
-9. In the left menu, click **Token configuration** &rarr; **+ Add optional claim**.
-10. Choose **ID** as the token type, tick **groups**, click **Add**. If a "Turn on the Microsoft Graph email, profile, openid permission" dialog pops up, accept it.
-11. (If you see an extra dialog asking which type of group claim, choose **Security groups** or **All groups (including distribution lists)** depending on what makes sense for you.)
+9. In the left menu, click **Authentication**. Scroll down to **Implicit grant and hybrid flows** and tick **ID tokens (used for implicit and hybrid flows)**. Click **Save** at the top.
+
+   This one is easy to miss. Without it, sign-in fails with `AADSTS700054: response_type 'id_token' is not enabled for the application`. The SWA platform asks Microsoft for an ID token at sign-in, and Microsoft only issues those to apps that have explicitly opted in via this checkbox.
+
+10. In the left menu, click **Token configuration** &rarr; **+ Add optional claim**.
+11. Choose **ID** as the token type, tick **groups**, click **Add**. If a "Turn on the Microsoft Graph email, profile, openid permission" dialog pops up, accept it.
+12. (If you see an extra dialog asking which type of group claim, choose **Security groups** or **All groups (including distribution lists)** depending on what makes sense for you.)
 
 What you just did:
 
@@ -310,6 +314,12 @@ Role names are **case-sensitive** and **whitespace-sensitive**:
 - `board_member` &cross;
 
 The role must match exactly between (1) what you typed into the invitation/portal and (2) what's in `staticwebapp.config.json`'s `allowedRoles`.
+
+### "(Standard tier) Sign-in fails with AADSTS700054: response_type 'id_token' is not enabled"
+
+You missed the **ID tokens** checkbox on the app registration.
+
+**Fix:** Microsoft Entra ID &rarr; App registrations &rarr; your app &rarr; **Authentication** &rarr; scroll to **Implicit grant and hybrid flows** &rarr; tick **ID tokens** &rarr; **Save**. Try sign-in again in an incognito window.
 
 ### "(Standard tier) The website doesn't see my group membership"
 
