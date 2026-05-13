@@ -9,8 +9,9 @@
   const mount = document.getElementById("user-area");
   if (!mount) return;
 
-  // Where to return to after auth completes (this page).
+  // Where to return to after sign-in (this page) and sign-out (always home).
   const here = encodeURIComponent(window.location.pathname + window.location.search);
+  const home = encodeURIComponent("/");
 
   try {
     const res = await fetch("/.auth/me", { credentials: "include" });
@@ -21,7 +22,7 @@
       const name = principal.userDetails || "Signed in";
       mount.innerHTML = `
         <span title="${principal.identityProvider}">Signed in as <strong>${escapeHtml(name)}</strong></span>
-        <a href="/.auth/logout?post_logout_redirect_uri=${here}">Sign out</a>
+        <a href="/.auth/logout?post_logout_redirect_uri=${home}">Sign out</a>
       `;
     } else {
       mount.innerHTML = `
