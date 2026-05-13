@@ -4,10 +4,16 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'standard-tier/**'
+      - '.github/workflows/azure-static-web-apps-green-sea-023d76710.yml'
   pull_request:
     types: [opened, synchronize, reopened, closed]
     branches:
       - main
+    paths:
+      - 'standard-tier/**'
+      - '.github/workflows/azure-static-web-apps-green-sea-023d76710.yml'
 
 jobs:
   build_and_deploy_job:

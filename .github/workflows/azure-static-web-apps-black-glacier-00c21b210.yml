@@ -4,10 +4,16 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'free-tier/**'
+      - '.github/workflows/azure-static-web-apps-black-glacier-00c21b210.yml'
   pull_request:
     types: [opened, synchronize, reopened, closed]
     branches:
       - main
+    paths:
+      - 'free-tier/**'
+      - '.github/workflows/azure-static-web-apps-black-glacier-00c21b210.yml'
 
 jobs:
   build_and_deploy_job:
