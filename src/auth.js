@@ -1,15 +1,10 @@
-// Reads the current user from Azure Static Web Apps' built-in /.auth/me endpoint
-// and renders a small Sign in / Sign out control in the header.
-//
-// /.auth/me returns: { clientPrincipal: null }  when anonymous
-//                    { clientPrincipal: { userId, userDetails, identityProvider, userRoles } }
-//                    when signed in.
+// Reads /.auth/me and renders Bootstrap-styled user controls into #user-area.
+// Sign-in returns the user to the current page; sign-out always sends them home.
 
 (async function renderUserArea() {
   const mount = document.getElementById("user-area");
   if (!mount) return;
 
-  // Where to return to after sign-in (this page) and sign-out (always home).
   const here = encodeURIComponent(window.location.pathname + window.location.search);
   const home = encodeURIComponent("/");
 
@@ -21,18 +16,30 @@
     if (principal) {
       const name = principal.userDetails || "Signed in";
       mount.innerHTML = `
-        <span title="${principal.identityProvider}">Signed in as <strong>${escapeHtml(name)}</strong></span>
-        <a href="/.auth/logout?post_logout_redirect_uri=${home}">Sign out</a>
+        <div class="dropdown">
+          <button class="btn btn-outline-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-person-circle me-1"></i>${escapeHtml(name)}
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><span class="dropdown-item-text small text-muted">Signed in via ${escapeHtml(principal.identityProvider)}</span></li>
+            <li><hr class="dropdown-divider" /></li>
+            <li><a class="dropdown-item" href="/.auth/logout?post_logout_redirect_uri=${home}"><i class="bi bi-box-arrow-right me-2"></i>Sign out</a></li>
+          </ul>
+        </div>
       `;
     } else {
       mount.innerHTML = `
-        <a href="/.auth/login/aad?post_login_redirect_uri=${here}">Sign in</a>
+        <a class="btn btn-light btn-sm" href="/.auth/login/aad?post_login_redirect_uri=${here}">
+          <i class="bi bi-microsoft me-1"></i>Sign in
+        </a>
       `;
     }
   } catch (err) {
-    // If /.auth/me isn't reachable (e.g. running locally without the SWA CLI),
-    // just show a sign-in link so the page still works.
-    mount.innerHTML = `<a href="/.auth/login/aad?post_login_redirect_uri=${here}">Sign in</a>`;
+    mount.innerHTML = `
+      <a class="btn btn-light btn-sm" href="/.auth/login/aad?post_login_redirect_uri=${here}">
+        <i class="bi bi-microsoft me-1"></i>Sign in
+      </a>
+    `;
   }
 })();
 

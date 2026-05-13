@@ -3,33 +3,36 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Access denied — Contoso</title>
+  <title>Access denied &mdash; Contoso</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="/styles.css" />
 </head>
-<body>
-  <header class="site-header">
-    <div class="brand">Contoso</div>
-    <nav class="site-nav">
-      <a href="/">Overview</a>
-    </nav>
-    <div id="user-area" class="user-area"></div>
-  </header>
+<body class="bg-light">
+  <nav class="navbar navbar-expand-lg navbar-dark sticky-top app-navbar">
+    <div class="container">
+      <a class="navbar-brand fw-bold" href="/"><i class="bi bi-graph-up-arrow me-2"></i>Contoso</a>
+      <div class="ms-auto" id="user-area"></div>
+    </div>
+  </nav>
 
-  <main class="container">
-    <h1>You're signed in, but not authorized</h1>
-    <p class="lead">
-      This page is reserved for board members and invited stakeholders. Your account
-      doesn't have the required role on this site.
-    </p>
-    <p>
-      If you believe this is a mistake, contact the site administrator and ask them
-      to send (or resend) you an invitation with the <code>boardmember</code> role.
-    </p>
-    <p style="margin-top: 2rem;">
-      <a class="button" href="/">&larr; Back to overview</a>
-    </p>
+  <main class="container py-5">
+    <div class="row justify-content-center">
+      <div class="col-md-8 col-lg-6 text-center">
+        <div class="display-1 text-warning mb-3"><i class="bi bi-shield-exclamation"></i></div>
+        <h1 class="h3 mb-3">You're signed in, but not authorized</h1>
+        <p class="text-muted mb-4">
+          This page is reserved for board members and invited stakeholders. Your account
+          doesn't have the required role on this site. If you believe this is a mistake,
+          contact the site administrator and ask them to send (or resend) you an invitation
+          with the <code>boardmember</code> role.
+        </p>
+        <a class="btn btn-primary" href="/"><i class="bi bi-arrow-left me-1"></i>Back to overview</a>
+      </div>
+    </div>
   </main>
 
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
   <script src="/auth.js"></script>
 </body>
 </html>
