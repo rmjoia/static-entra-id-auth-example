@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Access denied — Contoso</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand">Contoso</div>
+    <nav class="site-nav">
+      <a href="/">Overview</a>
+    </nav>
+    <div id="user-area" class="user-area"></div>
+  </header>
+
+  <main class="container">
+    <h1>You're signed in, but not authorized</h1>
+    <p class="lead">
+      This page is reserved for board members and invited stakeholders. Your account
+      doesn't have the required role on this site.
+    </p>
+    <p>
+      If you believe this is a mistake, contact the site administrator and ask them
+      to send (or resend) you an invitation with the <code>boardmember</code> role.
+    </p>
+    <p style="margin-top: 2rem;">
+      <a class="button" href="/">&larr; Back to overview</a>
+    </p>
+  </main>
+
+  <script src="/auth.js"></script>
+</body>
+</html>

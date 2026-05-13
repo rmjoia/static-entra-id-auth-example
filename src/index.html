@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contoso Annual Review — Public Overview</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand">Contoso</div>
+    <nav class="site-nav">
+      <a href="/" class="active">Overview</a>
+      <a href="/report.html">Annual Report</a>
+      <a href="/strategy.html">Strategy</a>
+    </nav>
+    <div id="user-area" class="user-area"></div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <h1>Contoso Annual Review</h1>
+      <p class="lead">
+        A public overview of our company's year. Detailed financials and forward-looking
+        strategy are reserved for board members and invited stakeholders.
+      </p>
+    </section>
+
+    <section class="cards">
+      <article class="card">
+        <h2>Mission</h2>
+        <p>
+          We build software that helps mid-market companies measure what matters
+          and act on it.
+        </p>
+      </article>
+      <article class="card">
+        <h2>2025 at a glance</h2>
+        <ul>
+          <li>Launched two new product lines</li>
+          <li>Opened offices in three new regions</li>
+          <li>Grew the team by 28%</li>
+        </ul>
+      </article>
+      <article class="card">
+        <h2>Looking ahead</h2>
+        <p>
+          Our strategy for the next three years focuses on platform consolidation
+          and customer success. Board members can view the full plan below.
+        </p>
+      </article>
+    </section>
+
+    <section class="restricted-cta">
+      <h2>For board members and invited stakeholders</h2>
+      <p>The following sections require authentication:</p>
+      <div class="cta-row">
+        <a class="button" href="/report.html">View Annual Report &rarr;</a>
+        <a class="button" href="/strategy.html">View Strategy &rarr;</a>
+      </div>
+      <p class="muted">
+        You'll be prompted to sign in with your Microsoft account. If you've been
+        invited but haven't accepted yet, check the invitation link sent to you.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <small>&copy; Contoso (sample project) &middot; Static Web Apps + Entra ID demo</small>
+  </footer>
+
+  <script src="/auth.js"></script>
+</body>
+</html>
