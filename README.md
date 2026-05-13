@@ -13,6 +13,26 @@ The repo can host both at once: create two SWAs in the portal, point one at `/fr
 
 ---
 
+## Contents
+
+- [**Free-tier example**](#free-tier-example) &mdash; pre-configured Entra ID + per-user invitations, no app registration
+  - [Deploy via the Azure Portal](#deploy-via-the-azure-portal)
+  - [Authentication flow](#authentication-flow)
+  - [Invite a user](#invite-a-user)
+- [**Standard-tier example**](#standard-tier-example) &mdash; custom Entra app + group-based roles via Azure Function
+  - [One-time Entra app registration](#one-time-entra-app-registration-in-the-tenant-that-owns-the-group)
+  - [Capture the security group's Object ID](#capture-the-security-groups-object-id)
+  - [Deploy the SWA](#deploy-the-swa)
+  - [Wire the secrets into the SWA](#wire-the-secrets-into-the-swa)
+  - [Update the tenant ID in `staticwebapp.config.json`](#update-the-tenant-id-in-staticwebappconfigjson)
+  - [How the role assignment works](#how-the-role-assignment-works)
+- [Troubleshooting auth](#troubleshooting-auth)
+- [Verified limits (per app)](#verified-limits-per-app)
+- [Cost summary](#cost-summary)
+- [References (Microsoft Learn)](#references-microsoft-learn)
+
+---
+
 ## Free-tier example
 
 Everything in `free-tier/`. No app registration, no secrets, no API.
