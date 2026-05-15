@@ -28,6 +28,7 @@ You can host both at the same time from this one repo &mdash; each becomes a sep
 
 ## Contents
 
+- [Architecture overview](#architecture-overview)
 - [**Free-tier walkthrough**](#free-tier-walkthrough) &mdash; recommended starting point
   - [Before you start](#before-you-start-free)
   - [Step 1: Create the website in Azure](#step-1-create-the-website-in-azure-free)
@@ -54,6 +55,7 @@ You can host both at the same time from this one repo &mdash; each becomes a sep
   - [GitHub repo hygiene](#github-repo-hygiene)
 - [Troubleshooting sign-in](#troubleshooting-sign-in)
 - [Plan limits at a glance](#plan-limits-at-a-glance)
+- [Why Azure SWA vs GitHub Pages?](#why-azure-swa-vs-github-pages)
 - [Microsoft documentation](#microsoft-documentation)
 
 ---
@@ -68,6 +70,68 @@ You'll see these words a lot. Here's roughly what they mean.
 - **App registration** &mdash; how you tell Microsoft "I have an app, and I'd like it to be able to sign people in." Produces an **Application (client) ID** and a **client secret** that your app uses to identify itself.
 - **Security group** &mdash; a group of users in Entra ID. Each has a unique **Object ID**.
 - **Role** &mdash; a permission tag. Our protected pages require the tag `boardmember`. How you grant that tag is what differs between the two examples.
+
+---
+
+## Architecture overview
+
+Both tiers deploy from the same `main` branch via separate, path-scoped GitHub Actions workflows. Each Static Web App owns its own workflow file; a push that touches only one tier's folder redeploys only that tier's site.
+
+```mermaid
+graph LR
+    User((End user))
+    Repo[GitHub repository]
+    SWA_Free[Azure SWA<br/>Free plan]
+    SWA_Std[Azure SWA<br/>Standard plan]
+    PC[Pre-configured Entra ID<br/>multi-tenant]
+    Custom[Custom Entra app reg<br/>single-tenant]
+    Group[Entra security<br/>group]
+    Func[GetRoles function]
+
+    User -->|HTTPS| SWA_Free
+    User -->|HTTPS| SWA_Std
+    SWA_Free -.->|/.auth/login/aad| PC
+    SWA_Std -.->|/.auth/login/aad| Custom
+    Custom -.->|groups claim| Group
+    SWA_Std -->|claims POST| Func
+    Repo -->|GitHub Actions, free-tier/**| SWA_Free
+    Repo -->|GitHub Actions, standard-tier/**| SWA_Std
+
+    classDef free fill:#d1fadc,stroke:#14532d,color:#14532d
+    classDef std fill:#fde9c4,stroke:#6b3a06,color:#6b3a06
+    class SWA_Free,PC free
+    class SWA_Std,Custom,Group,Func std
+```
+
+### Hardening phases
+
+The repo currently implements **Phase 1**. Each later phase is independent &mdash; pick any subset.
+
+| Phase | What it adds | Indicative effort |
+|---|---|---|
+| **1. Reference** | What's in the repo today | &mdash; |
+| **2. Cert in Key Vault** | Removes the plaintext client secret from app settings; Key Vault adds an audit trail of credential access | 30&ndash;60 min |
+| **3. Conditional Access** | MFA, compliant device, or trusted-location requirements enforced at sign-in | A few hours plus a verification window |
+| **4. Network restrictions** | IP allowlist, private endpoint, or Azure Front Door + WAF | Half-day to two days |
+| **5. Operational maturity** | Application Insights, alerts, branch protection, deploy-token rotation | 1&ndash;2 days |
+
+Indicative pricing is published on the [Azure Static Web Apps pricing page](https://azure.microsoft.com/en-us/pricing/details/app-service/static/) and the [Azure Front Door pricing page](https://azure.microsoft.com/en-us/pricing/details/frontdoor/); refer to those for current numbers.
+
+### Threat model in brief
+
+The public repo discloses configuration that is not credential material: the role names in `allowedRoles`, the tenant ID embedded in `openIdIssuer`, the route patterns, and the `GetRoles` function source. None of these are sufficient to access protected content.
+
+Reaching the protected pages still requires:
+
+- A valid Microsoft account that the Entra app registration accepts (tenant-restricted on Standard tier), and
+- Membership in the configured Entra security group (Standard) or an accepted SWA invitation with the `boardmember` role (Free), and
+- The SWA platform's authorization check passing. Per the [SWA configuration documentation](https://learn.microsoft.com/en-us/azure/static-web-apps/configuration), the platform handles `allowedRoles` server-side: unauthenticated callers receive HTTP `401`, authenticated callers without the required role receive HTTP `403`. The response-override mechanism is what converts those to a friendly redirect or rewrite.
+
+Compromising any one of (a) the SWA's application-settings store, (b) the Entra app registration's client secret, (c) group membership, or (d) Key Vault contents (in the hardened variant) would each grant a different subset of capabilities. None is exposed by the repo; each is governed by an independent access-control layer (Azure RBAC, Entra access controls, Key Vault access policies).
+
+### Full design document
+
+A complete architecture document is at [`docs/design-doc.pdf`](docs/design-doc.pdf): system context, sequence diagrams, trust-boundary diagram, full threat-model table, hardening roadmap with phase-by-phase cost, and operations procedures. Aimed at architecture and security review.
 
 ---
 
@@ -583,6 +647,50 @@ Two things worth re-stating:
 
 - The **25-person invitation cap is the same on Free and Standard**. Standard removes the cap only because it adds the group-based option (which this Standard example uses).
 - The Free plan **never silently bills you**. If your site goes past 100 GB/month it stops serving until the month rolls over.
+
+---
+
+## Why Azure SWA vs GitHub Pages?
+
+GitHub Pages and Azure Static Web Apps look superficially similar &mdash; both host static sites from a GitHub repo with built-in CI/CD. The difference matters when the site needs authentication for some pages.
+
+### Server-side vs client-side enforcement
+
+Azure SWA enforces authorisation at the platform layer. Routes declared with `allowedRoles` in `staticwebapp.config.json` return HTTP `401` to unauthenticated callers and `403` to authenticated callers without the required role &mdash; before any of the page's content is served. ([SWA configuration docs](https://learn.microsoft.com/en-us/azure/static-web-apps/configuration))
+
+GitHub Pages has no equivalent. It's a static-only host with no authentication middleware. Two consequences:
+
+1. To require sign-in on GitHub Pages, you would have to write client-side JavaScript (for example with MSAL.js) that checks identity inside the page itself. This only hides content visually; the underlying HTML file is still served to anyone who requests its URL directly. A static host cannot conditionally serve files based on identity &mdash; that's a server-side capability.
+2. GitHub Pages does have a **private visibility** option, but only for **organizations using GitHub Enterprise Cloud**, and only for project sites (not organization sites). When enabled, "a privately published site can only be accessed by people with read access to the repository the site is published from." Access is site-wide, all-or-nothing &mdash; there's no per-route or per-user-role gating equivalent to `allowedRoles`. ([GitHub Pages visibility docs](https://docs.github.com/en/enterprise-cloud@latest/pages/getting-started-with-github-pages/changing-the-visibility-of-your-github-pages-site))
+
+### Comparison
+
+| | GitHub Pages | Azure SWA Free | Azure SWA Standard |
+|---|---|---|---|
+| Hosting cost | Free for public repos; Pro/Team/Enterprise plans for private repos | Free | Paid per app, see [SWA pricing](https://azure.microsoft.com/en-us/pricing/details/app-service/static/) |
+| CI/CD | Built-in or GitHub Actions | GitHub Actions (auto-generated workflow) | GitHub Actions (auto-generated workflow) |
+| Custom domain + HTTPS | Yes | Yes (up to 2 per app) | Yes (up to 6 per app) |
+| Server-side auth enforcement | No | Yes | Yes |
+| Per-route access control (`allowedRoles`) | No | Yes | Yes |
+| Built-in Microsoft Entra sign-in | No | Yes (multi-tenant, pre-configured) | Yes (single-tenant, custom app registration) |
+| Group-based role assignment | No | No (invitations only, capped at 25) | Yes (via `rolesSource` API function) |
+| Private visibility | Site-wide only, GHEC required | N/A &mdash; use `allowedRoles` | N/A &mdash; use `allowedRoles` |
+| Private endpoint / VNet integration | No | No | Yes |
+
+### Adding authentication to GitHub Pages anyway
+
+If you have a strong reason to stay on Pages, two patterns work without writing your own auth code:
+
+- **Cloudflare Access in front of Pages.** Cloudflare's Zero Trust product applies identity-based policies at the network edge and can use Microsoft Entra ID as the identity provider. The free tier supports up to **50 users** with full ZTNA features. Access decisions happen before traffic reaches the origin. Requires routing the Pages site through Cloudflare via a custom domain. ([Cloudflare Zero Trust plans](https://www.cloudflare.com/plans/zero-trust-services/))
+- **GitHub Enterprise Cloud Private Pages.** Available on GitHub Enterprise Cloud (including for organizations using Enterprise Managed Users). Access governed by repo read access on the source repo. Site-wide.
+
+Neither approach gives you the *"public landing page + protected internal pages on the same domain"* split that `allowedRoles` provides natively on SWA.
+
+### When each is the right answer
+
+GitHub Pages fits when: the site is entirely public, "protected" content is just personalisation rather than confidential data, or site-wide enterprise SSO via GHEC Private Pages meets the requirement.
+
+Azure SWA fits when: a single site mixes public and authenticated content, real (server-enforced) access control is required, group-based access via Entra is desired, or server-side functions need to live next to the static content.
 
 ---
 

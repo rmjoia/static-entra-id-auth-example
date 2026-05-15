@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Static site with Microsoft Entra ID authentication &mdash; Design & Implementation</title>
+<style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 18mm 16mm;
+  @top-right { content: "Static SWA + Entra ID  •  v0.1"; font-size: 9pt; color: #888; }
+  @bottom-right { content: counter(page) " / " counter(pages); font-size: 9pt; color: #888; }
+  @bottom-left { content: "Confidential — internal review"; font-size: 9pt; color: #888; }
+}
+@page :first { @top-right { content: ""; } @bottom-right { content: ""; } @bottom-left { content: ""; } }
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  font-size: 10.5pt;
+  line-height: 1.5;
+  color: #1f2330;
+}
+h1, h2, h3, h4 { color: #1e3a8a; line-height: 1.25; }
+h1 { font-size: 20pt; border-bottom: 2px solid #1e3a8a; padding-bottom: 4pt; margin-top: 0; }
+h2 { font-size: 14pt; margin-top: 1.4em; }
+h3 { font-size: 11.5pt; margin-top: 1.1em; color: #2c5cff; }
+h4 { font-size: 10.5pt; margin-top: 0.9em; color: #444; }
+p { margin: 0.4em 0 0.7em; }
+ul, ol { margin: 0.4em 0 0.8em; padding-left: 1.4em; }
+li { margin-bottom: 0.2em; }
+code { font-family: "Cascadia Code", Consolas, Monaco, monospace; font-size: 0.92em; background: #f3f4f8; padding: 1px 4px; border-radius: 3px; }
+pre { background: #0f172a; color: #e2e8f0; padding: 10pt 12pt; border-radius: 4pt; font-size: 9pt; line-height: 1.45; overflow-x: auto; }
+pre code { background: none; padding: 0; color: inherit; }
+table { border-collapse: collapse; width: 100%; font-size: 9.5pt; margin: 0.6em 0 1em; }
+th, td { border: 1px solid #d6d8e0; padding: 6pt 9pt; text-align: left; vertical-align: top; }
+th { background: #eef2ff; color: #1e3a8a; font-weight: 600; }
+tr:nth-child(even) td { background: #fafbff; }
+blockquote { margin: 0.6em 0; padding: 8pt 12pt; background: #fff7e0; border-left: 4px solid #f0c14b; color: #5a4500; border-radius: 0 4px 4px 0; font-size: 10pt; }
+.callout-info { background: #eef7ff; border-left-color: #2c5cff; color: #1e3a5e; }
+.callout-danger { background: #fff0f0; border-left-color: #d9534f; color: #6b1e1c; }
+.muted { color: #6c757d; }
+.small { font-size: 9pt; }
+.tag { display: inline-block; padding: 2pt 8pt; border-radius: 999px; font-size: 8.5pt; font-weight: 600; }
+.tag-free { background: #d1fadc; color: #14532d; }
+.tag-standard { background: #fde9c4; color: #6b3a06; }
+.tag-optional { background: #e0e7ff; color: #1e3a8a; }
+.tag-now { background: #d1d5db; color: #1f2937; }
+
+.page-break { page-break-before: always; }
+.no-break { page-break-inside: avoid; }
+section { page-break-inside: auto; }
+.section h1 { page-break-before: always; padding-top: 0.6em; }
+.cover { page-break-after: always; min-height: 90vh; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; padding: 0 8pt; }
+.cover .eyebrow { font-size: 10pt; text-transform: uppercase; letter-spacing: 0.18em; color: #2c5cff; font-weight: 700; }
+.cover h1 { font-size: 32pt; border: none; padding: 0; margin: 12pt 0; line-height: 1.15; color: #1e3a8a; }
+.cover .subtitle { font-size: 14pt; color: #1f2330; font-weight: 400; margin-bottom: 32pt; max-width: 620pt; }
+.cover .meta { font-size: 10.5pt; color: #444; }
+.cover .meta strong { color: #1e3a8a; }
+.cover .stripe { width: 60pt; height: 4pt; background: #2c5cff; margin-bottom: 28pt; }
+.cover-footer { margin-top: auto; padding-top: 28pt; border-top: 1px solid #d6d8e0; font-size: 9pt; color: #777; }
+
+.toc h2 { font-size: 14pt; }
+.toc ol { list-style: decimal; padding-left: 1.5em; }
+.toc ol ol { list-style: lower-alpha; }
+.toc a { color: #1e3a8a; text-decoration: none; }
+.toc li { margin-bottom: 0.3em; }
+
+.kv { display: grid; grid-template-columns: 200pt 1fr; gap: 6pt 12pt; font-size: 10pt; margin: 0.4em 0 1em; }
+.kv .k { color: #666; font-weight: 600; }
+
+.mermaid { background: #fff; padding: 12pt; border: 1px solid #e6e8ef; border-radius: 4pt; margin: 12pt 0; text-align: center; page-break-inside: avoid; }
+.mermaid svg { max-width: 100% !important; height: auto !important; }
+.fig-caption { font-size: 9pt; color: #555; text-align: center; margin-top: -4pt; margin-bottom: 14pt; font-style: italic; }
+
+.phase { border: 1px solid #d6d8e0; border-radius: 4pt; padding: 10pt 12pt; margin: 8pt 0; page-break-inside: avoid; }
+.phase h3 { margin-top: 0; }
+.phase .summary { color: #444; }
+
+.toc-link-list { columns: 2; column-gap: 24pt; }
+</style>
+</head>
+<body>
+
+<!-- ========== COVER PAGE ========== -->
+<section class="cover">
+  <div class="stripe"></div>
+  <div class="eyebrow">Design &amp; Implementation Reference</div>
+  <h1>Static website with Microsoft Entra ID authentication on Azure Static Web Apps</h1>
+  <div class="subtitle">Two complementary patterns for hosting a public-facing site whose protected pages require sign-in: a Free-plan pattern with per-user invitations, and a Standard-plan pattern with group-based access via a custom app registration and a role-assignment function.</div>
+  <div class="meta">
+    <p><strong>Audience:</strong> CTO, Architecture, Security Operations (SecOps).</p>
+    <p><strong>Status:</strong> Reference / Demo &mdash; not yet production-deployed with real data.</p>
+    <p><strong>Document version:</strong> 0.1 &mdash; 2026-05-15</p>
+    <p><strong>Source repository:</strong> <code>github.com/rmjoia/static-entra-id-auth-example</code></p>
+  </div>
+  <div class="cover-footer">
+    Document intended for internal architecture and security review. Contains illustrative tenant and resource identifiers; substitute real values when adopting.
+  </div>
+</section>
+
+<!-- ========== TABLE OF CONTENTS ========== -->
+<section class="toc">
+  <h1 style="page-break-before: avoid;">Contents</h1>
+  <ol>
+    <li><a href="#summary">Executive summary</a></li>
+    <li><a href="#context">System context</a></li>
+    <li><a href="#arch-free">Free-tier architecture</a></li>
+    <li><a href="#arch-standard">Standard-tier architecture</a></li>
+    <li><a href="#flows">Authentication and authorization flows</a></li>
+    <li><a href="#security">Security model &amp; trust boundaries</a></li>
+    <li><a href="#ca">Conditional Access integration</a></li>
+    <li><a href="#cicd">Deployment and CI/CD</a></li>
+    <li><a href="#hardening">Hardening roadmap</a></li>
+    <li><a href="#cost">Cost summary</a></li>
+    <li><a href="#ops">Operations</a></li>
+    <li><a href="#limits">Plan limits</a></li>
+    <li><a href="#references">References</a></li>
+  </ol>
+</section>
+
+<!-- ========== 1. EXECUTIVE SUMMARY ========== -->
+<section class="section" id="summary">
+<h1>1. Executive summary</h1>
+
+<p>This document describes a reference implementation for hosting a static website on <strong>Azure Static Web Apps</strong> (SWA) where some pages are public and others require authenticated access through <strong>Microsoft Entra ID</strong>. The pattern is intended for use cases such as board reports, investor updates, partner-only documents, or any site that needs a public marketing surface paired with a private members-only area, without operating a traditional web server.</p>
+
+<p>Two parallel implementations are provided in the same source repository:</p>
+
+<ul>
+  <li><span class="tag tag-free">Free plan</span> Uses the platform's pre-configured Microsoft Entra ID provider. Access to protected pages is granted via per-user invitation links. Suitable for fixed audiences of up to 25 users. No app registration is required; the authentication provider is multi-tenant by default.</li>
+  <li><span class="tag tag-standard">Standard plan</span> Uses a custom Microsoft Entra ID app registration scoped to a specific tenant, with role assignment driven by membership in an Entra ID security group. Authorization is computed by a serverless function at sign-in. Suitable for audiences that fluctuate, exceed 25 members, or are managed by existing identity-governance processes.</li>
+</ul>
+
+<p>Both implementations share a common front-end (Bootstrap 5 + Chart.js, Microsoft-branded "Contoso annual review" demo). They differ only in <code>staticwebapp.config.json</code> and, for the Standard variant, the presence of a <code>GetRoles</code> Azure Function under the <code>/api</code> path.</p>
+
+<p>The reference is deployed via GitHub Actions workflows generated by the Azure portal. Each Static Web App instance owns its own workflow file; path-scoped triggers ensure that pushes affecting only one tier do not redeploy the other.</p>
+
+<h3>Headline recommendations</h3>
+<ol>
+  <li>For demo and small fixed audiences, deploy as Free-tier. No additional security work is required for the platform itself.</li>
+  <li>For audiences managed through Entra groups, deploy as Standard-tier. Combined with Conditional Access (MFA, compliant device) on the underlying app registration, this is suitable for sensitive but not regulated content.</li>
+  <li>Before exposing real confidential data: replace the client secret with a Key Vault-stored certificate fetched by the SWA's managed identity, and enable Conditional Access policies on the app registration covering MFA and (where applicable) device compliance.</li>
+  <li>For regulated, highly sensitive, or partner-only content: pair Standard-tier with either a private endpoint (intranet-only) or Azure Front Door Premium with WAF (public-internet but filtered). Both options are documented in this paper.</li>
+</ol>
+</section>
+
+<!-- ========== 2. SYSTEM CONTEXT ========== -->
+<section class="section" id="context">
+<h1>2. System context</h1>
+
+<p>Figure 1 shows the high-level interactions among the principal actors and systems. The same end user can be served by either tier; the differences are in which Azure subscription hosts the website, which Entra-ID configuration is used, and how access is granted.</p>
+
+<div class="mermaid">
+graph LR
+    User((End user<br/>Microsoft account))
+    GitHub[GitHub<br/>repository]
+    SWA_Free[Azure SWA<br/>Free plan]
+    SWA_Std[Azure SWA<br/>Standard plan]
+    Entra_PC[Pre-configured<br/>Entra provider<br/>multi-tenant]
+    Entra_Custom[Custom Entra<br/>app registration<br/>single-tenant]
+    Group[Entra security<br/>group]
+    Func[GetRoles<br/>Azure Function]
+
+    User -->|HTTPS| SWA_Free
+    User -->|HTTPS| SWA_Std
+    SWA_Free -->|/.auth/login/aad| Entra_PC
+    SWA_Std -->|/.auth/login/aad| Entra_Custom
+    Entra_Custom -.->|groups claim| Group
+    SWA_Std -->|claims POST| Func
+    Func -.->|reads BOARD_GROUP_ID| SWA_Std
+    GitHub -->|GitHub Actions| SWA_Free
+    GitHub -->|GitHub Actions| SWA_Std
+
+    classDef free fill:#d1fadc,stroke:#14532d,color:#14532d;
+    classDef std  fill:#fde9c4,stroke:#6b3a06,color:#6b3a06;
+    class SWA_Free,Entra_PC free;
+    class SWA_Std,Entra_Custom,Group,Func std;
+</div>
+<p class="fig-caption">Figure 1. System context: two Static Web Apps fed from one GitHub repo, each integrating with a different Entra ID configuration.</p>
+
+<h3>2.1 Principal actors</h3>
+<table>
+  <tr><th>Actor</th><th>Role</th><th>Notes</th></tr>
+  <tr><td>End user</td><td>Visitor / member</td><td>Holds a Microsoft account (work, school, or personal).</td></tr>
+  <tr><td>Site administrator</td><td>Grants access</td><td>For Free: issues invitations from the portal. For Standard: manages Entra group membership.</td></tr>
+  <tr><td>Repository maintainer</td><td>Authors content</td><td>Pushes to <code>main</code>. CI/CD redeploys automatically.</td></tr>
+  <tr><td>Entra tenant administrator</td><td>Provides identity infrastructure</td><td>Owns the app registration (Standard only), security group, Conditional Access policies.</td></tr>
+</table>
+
+<h3>2.2 Principal components</h3>
+<table>
+  <tr><th>Component</th><th>Free tier</th><th>Standard tier</th></tr>
+  <tr><td>Azure Static Web App</td><td>Free plan SKU</td><td>Standard plan SKU</td></tr>
+  <tr><td>Authentication provider</td><td>Pre-configured (multi-tenant)</td><td>Custom Entra app registration (single-tenant)</td></tr>
+  <tr><td>Authorization mechanism</td><td>Per-user invitation, max 25 users</td><td>Function-driven, sources roles from group claims</td></tr>
+  <tr><td>API surface</td><td>None</td><td>Single function: <code>POST /api/GetRoles</code></td></tr>
+  <tr><td>Configuration file</td><td><code>free-tier/src/staticwebapp.config.json</code></td><td><code>standard-tier/src/staticwebapp.config.json</code></td></tr>
+  <tr><td>CI/CD workflow</td><td><code>.github/workflows/azure-static-web-apps-black-glacier-*.yml</code>, path-scoped to <code>free-tier/**</code></td><td><code>.github/workflows/azure-static-web-apps-green-sea-*.yml</code>, path-scoped to <code>standard-tier/**</code></td></tr>
+</table>
+</section>
+
+<!-- ========== 3. FREE-TIER ARCHITECTURE ========== -->
+<section class="section" id="arch-free">
+<h1>3. Free-tier architecture</h1>
+
+<p>The Free-tier implementation is the minimum-configuration variant. It relies entirely on platform-provided defaults for both authentication and authorization, and requires no app registration in Entra ID.</p>
+
+<div class="mermaid">
+graph TB
+    subgraph Internet
+        EU[End user]
+    end
+    subgraph "Personal Azure subscription"
+        SWA[Azure SWA<br/>Free plan<br/>black-glacier-00c21b210]
+        RM[Role management<br/>up to 25 invited users]
+    end
+    subgraph "Microsoft Entra ID, pre-configured"
+        AAD[Multi-tenant<br/>any Microsoft account]
+    end
+    subgraph "GitHub"
+        Repo[github.com/rmjoia/<br/>static-entra-id-auth-example]
+        WF[Workflow<br/>azure-static-web-apps-black-glacier.yml]
+    end
+
+    EU -->|HTTPS| SWA
+    SWA -.->|/.auth/login/aad| AAD
+    AAD -.->|return claims| SWA
+    SWA -.->|role check| RM
+    Repo -->|push to main, free-tier/**| WF
+    WF -->|deploy /free-tier/src| SWA
+
+    classDef azure fill:#eef7ff,stroke:#2c5cff,color:#1e3a5e;
+    classDef ent   fill:#fff7e0,stroke:#f0c14b,color:#5a4500;
+    class SWA azure;
+    class AAD ent;
+</div>
+<p class="fig-caption">Figure 2. Free-tier component view: a single SWA with the pre-configured Entra provider and invitation-based authorization.</p>
+
+<h3>3.1 Trust posture</h3>
+<ul>
+  <li><strong>Authentication.</strong> The pre-configured provider is multi-tenant. Any holder of a Microsoft account &mdash; personal or work, in any tenant &mdash; can complete the sign-in handshake. This means authentication is not, by itself, an access barrier.</li>
+  <li><strong>Authorization.</strong> Protected routes (<code>/report.html</code>, <code>/strategy.html</code>) carry an <code>allowedRoles: ["boardmember"]</code> rule. The custom role <code>boardmember</code> is granted only by invitation, generated from the SWA's Role management blade.</li>
+  <li><strong>Capacity.</strong> The invitation system is capped at <strong>25 users per app</strong> on both Free and Standard plans. To exceed this, the Standard-tier pattern is required.</li>
+  <li><strong>Revocation.</strong> Removing a user from Role management invalidates their permissions on the next sign-in; the SWA's session cookie continues to honour previously assigned roles until expiry.</li>
+</ul>
+
+<h3>3.2 What this pattern is good for</h3>
+<ul>
+  <li>Fixed, small audiences (board of directors, investor short-list, partner pilot).</li>
+  <li>Reference architectures and demonstrations.</li>
+  <li>Content whose value does not justify the operational overhead of an app registration.</li>
+</ul>
+
+<h3>3.3 What this pattern is not suitable for</h3>
+<ul>
+  <li>Audiences larger than 25 members.</li>
+  <li>Audiences whose composition changes frequently (joiners/leavers, conditional access requirements).</li>
+  <li>Use cases requiring restriction to a specific Entra tenant at the sign-in level.</li>
+  <li>Use cases requiring an SLA on uptime.</li>
+</ul>
+</section>
+
+<!-- ========== 4. STANDARD-TIER ARCHITECTURE ========== -->
+<section class="section" id="arch-standard">
+<h1>4. Standard-tier architecture</h1>
+
+<p>The Standard-tier implementation replaces the pre-configured provider with a custom Entra ID app registration owned by the organisation. Authorization is decoupled from the invitation system and instead derived from Entra group claims, evaluated by a small serverless function deployed alongside the static site.</p>
+
+<div class="mermaid">
+graph TB
+    subgraph Internet
+        EU[End user]
+    end
+    subgraph "Org-tenant Azure subscription"
+        SWA[Azure SWA Standard plan<br/>green-sea-023d76710]
+        Func[Azure Function<br/>POST /api/GetRoles]
+        KV[Azure Key Vault<br/>optional after hardening]
+    end
+    subgraph "Org Microsoft Entra ID"
+        AppReg[Custom app registration<br/>single-tenant<br/>ID tokens enabled<br/>groups optional claim]
+        Group[Security group<br/>security-group-board-members]
+    end
+    subgraph "GitHub"
+        Repo[github.com/rmjoia/<br/>static-entra-id-auth-example]
+        WF[Workflow<br/>azure-static-web-apps-green-sea.yml]
+    end
+
+    EU -->|HTTPS| SWA
+    SWA -.->|/.auth/login/aad| AppReg
+    AppReg -.->|group membership| Group
+    AppReg -.->|ID token + groups claim| SWA
+    SWA -->|claims POST| Func
+    Func -.->|return roles| SWA
+    SWA -.->|fetch cert via MI| KV
+    Repo -->|push to main, standard-tier/**| WF
+    WF -->|deploy /standard-tier/src + /api| SWA
+
+    classDef azure fill:#eef7ff,stroke:#2c5cff,color:#1e3a5e;
+    classDef ent   fill:#fff7e0,stroke:#f0c14b,color:#5a4500;
+    classDef opt   stroke-dasharray: 4 3, fill:#f3f4f8;
+    class SWA,Func azure;
+    class AppReg,Group ent;
+    class KV opt;
+</div>
+<p class="fig-caption">Figure 3. Standard-tier component view. The dashed component is added during the hardening phase (see &sect;9); it is not part of the minimum deployment.</p>
+
+<h3>4.1 Components and ownership</h3>
+<table>
+  <tr><th>Component</th><th>Owner</th><th>Configuration location</th></tr>
+  <tr><td>App registration</td><td>Entra tenant admin</td><td>Entra portal &mdash; App registrations</td></tr>
+  <tr><td>Security group</td><td>Group owner</td><td>Entra portal &mdash; Groups</td></tr>
+  <tr><td>SWA configuration</td><td>Repository maintainer</td><td><code>standard-tier/src/staticwebapp.config.json</code></td></tr>
+  <tr><td>Role-assignment logic</td><td>Repository maintainer</td><td><code>standard-tier/api/src/functions/GetRoles.js</code></td></tr>
+  <tr><td>Client secret / cert</td><td>Entra tenant admin / Key Vault admin</td><td>SWA application settings (secret) or Key Vault (cert)</td></tr>
+  <tr><td>Group ID</td><td>Repository maintainer (configures), Group owner (controls members)</td><td>SWA application setting <code>BOARD_GROUP_ID</code></td></tr>
+  <tr><td>Conditional Access policies</td><td>Entra tenant admin / SecOps</td><td>Entra portal &mdash; Security &mdash; Conditional Access</td></tr>
+</table>
+
+<h3>4.2 Required app registration settings</h3>
+<ul>
+  <li><strong>Supported account types:</strong> Single tenant. Restricts sign-in to the org's own users.</li>
+  <li><strong>Redirect URI:</strong> Web platform &mdash; <code>https://&lt;swa-host&gt;.azurestaticapps.net/.auth/login/aad/callback</code>.</li>
+  <li><strong>Implicit grant and hybrid flows:</strong> <strong>ID tokens enabled.</strong> Without this, sign-in fails with <code>AADSTS700054: response_type 'id_token' is not enabled for the application</code>.</li>
+  <li><strong>Optional claims (ID token):</strong> <code>groups</code> claim added. Type: Security groups (or All groups, depending on operational preference).</li>
+  <li><strong>API permissions:</strong> default <code>Microsoft Graph &mdash; User.Read (delegated)</code> is sufficient.</li>
+  <li><strong>Credentials:</strong> client secret in <em>Phase 1</em>; certificate stored in Key Vault in <em>Phase 2</em> hardening.</li>
+</ul>
+
+<h3>4.3 The GetRoles function</h3>
+<p>The function is Node.js, Azure Functions v4 programming model. It receives the platform's POST at every sign-in, with the user's identity and claims in the body. It is internal-only by virtue of being declared as <code>rolesSource</code>; the platform automatically blocks external HTTP requests to it.</p>
+
+<pre><code>// standard-tier/api/src/functions/GetRoles.js (excerpt)
+app.http("GetRoles", {
+  methods: ["POST"],
+  authLevel: "anonymous",  // platform-only invocation
+  handler: async (request, context) => {
+    const body = await request.json();
+    const groupIds = new Set(
+      (body.claims || [])
+        .filter(c => c.typ === "groups")
+        .map(c => c.val)
+    );
+    const boardGroupId = process.env.BOARD_GROUP_ID;
+    const roles = [];
+    if (boardGroupId && groupIds.has(boardGroupId)) {
+      roles.push("boardmember");
+    }
+    return { status: 200, jsonBody: { roles } };
+  }
+});</code></pre>
+
+<blockquote class="callout-info">
+  <strong>Group claim overage.</strong> If a user belongs to more than ~150 Entra groups, Microsoft omits the <code>groups</code> claim from the token and emits <code>_claim_names</code> / <code>_claim_sources</code> pointing to Microsoft Graph instead. The reference implementation does not include the Graph fallback. For small teams this is irrelevant; for large organisations, see the Microsoft Learn "Assign roles via Graph" tutorial (&sect;13).
+</blockquote>
+</section>
+
+<!-- ========== 5. AUTH FLOWS ========== -->
+<section class="section" id="flows">
+<h1>5. Authentication and authorization flows</h1>
+
+<p>The Standard-tier sign-in is the more interesting case. The Free-tier flow follows the same shape but with role determination via the invitation system rather than the function.</p>
+
+<div class="mermaid">
+sequenceDiagram
+    autonumber
+    actor U as User
+    participant S as Azure SWA
+    participant E as Microsoft Entra ID
+    participant CA as Conditional Access
+    participant G as Security group
+    participant F as GetRoles function
+
+    U->>S: GET /report.html (unauthenticated)
+    S-->>U: 302 -> /.auth/login/aad
+    U->>E: Sign-in (credentials, MFA, etc.)
+    E->>CA: Evaluate policies
+    Note over CA: Optional layer:<br/>MFA, device compliance,<br/>trusted location, risk score
+    CA-->>E: Grant or block
+    E->>G: Resolve group membership
+    G-->>E: Membership list
+    E-->>S: ID token w/ groups claim
+    S->>F: POST { identityProvider, userId,<br/>userDetails, claims, accessToken }
+    F->>F: Compare groups vs BOARD_GROUP_ID
+    F-->>S: { roles: ["boardmember"] }
+    S-->>S: Mint session cookie<br/>userRoles = [anonymous, authenticated, boardmember]
+    S-->>U: 302 -> /report.html (Set-Cookie)
+    U->>S: GET /report.html (with cookie)
+    S-->>U: 200 OK (dashboard renders)
+</div>
+<p class="fig-caption">Figure 4. End-to-end sign-in and authorization, Standard tier. The Conditional Access step is optional but recommended (see &sect;7).</p>
+
+<h3>5.1 Source of truth for runtime authorization</h3>
+<p>The Static Web App platform's <code>/.auth/me</code> endpoint returns the active <code>clientPrincipal</code>, including the <code>userRoles</code> applied to the current session. This is the authoritative value used by the platform for route evaluation. The Role management blade and the function's return value <em>determine</em> what is written to a new cookie; once a cookie is issued, its claims hold until the cookie expires or is invalidated.</p>
+
+<p>Operational consequence: a change in group membership (Standard) or invitation roles (Free) does not affect existing sessions. Users must sign out and back in to receive an updated role set. This is documented in Operations (&sect;11).</p>
+
+<h3>5.2 Edge propagation</h3>
+<p>Role changes propagate across the Static Web Apps edge network with a typical latency of several minutes (documented by Microsoft as "a few minutes"). During the propagation window, different geographically distributed edge nodes may return different <code>userRoles</code> for the same user on parallel requests. The behaviour stabilises once propagation completes and is irreversible (the new value, once observed, persists).</p>
+</section>
+
+<!-- ========== 6. SECURITY MODEL ========== -->
+<section class="section" id="security">
+<h1>6. Security model &amp; trust boundaries</h1>
+
+<p>The diagram below shows the trust boundaries crossed by various data and credentials in the Standard-tier deployment. Each box represents a security boundary controlled by a distinct authentication / authorisation mechanism.</p>
+
+<div class="mermaid">
+graph TB
+    subgraph PB["Public boundary (no auth)"]
+        SRC[Repository source<br/>HTML, JS, CSS, config, function code]
+        TID[Tenant ID]
+        URL[SWA URL]
+    end
+    subgraph APS["SWA app-settings boundary (Azure RBAC)"]
+        CS[AZURE_CLIENT_SECRET]
+        BG[BOARD_GROUP_ID]
+    end
+    subgraph EB["Entra ID boundary (tenant admin / group owner)"]
+        APP[App registration credentials]
+        MEM[Group membership]
+        USR[User accounts]
+    end
+    subgraph KV["Key Vault boundary (KV access policies / RBAC)"]
+        CERT[Certificate &amp; private key]
+    end
+    subgraph SP["SWA-protected content boundary"]
+        PROT[Protected routes /report.html, /strategy.html]
+    end
+
+    PROT -. requires .-> APP
+    PROT -. requires .-> MEM
+    APP -. credential source .-> CS
+    APP -. credential source .-> CERT
+    PROT -. role mapping uses .-> BG
+
+    classDef pub  fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d;
+    classDef rest fill:#eef7ff,stroke:#2c5cff,color:#1e3a5e;
+    classDef ent  fill:#fff7e0,stroke:#f0c14b,color:#5a4500;
+    classDef kv   fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e;
+    classDef prot fill:#d1fadc,stroke:#14532d,color:#14532d;
+    class PB pub;
+    class APS rest;
+    class EB ent;
+    class KV kv;
+    class SP prot;
+</div>
+<p class="fig-caption">Figure 5. Trust boundaries. To reach the protected content (green), an attacker would need to cross at least two independent boundaries.</p>
+
+<h3>6.1 What is publicly visible</h3>
+<ul>
+  <li>The <code>staticwebapp.config.json</code> file and the <code>GetRoles</code> function source code &mdash; both reside in a public GitHub repository.</li>
+  <li>The tenant ID, embedded in the <code>openIdIssuer</code> URL within the config file. Microsoft treats tenant IDs as discoverable, not secret.</li>
+  <li>The SWA's public hostname.</li>
+  <li>The role name(s) defined in <code>allowedRoles</code>.</li>
+</ul>
+
+<p>Important note: SWA does not serve <code>staticwebapp.config.json</code> as a static file. Requests to <code>https://&lt;site&gt;/staticwebapp.config.json</code> return 404. The file is read at build/deploy time and consumed by the platform; it is not exposed at runtime.</p>
+
+<h3>6.2 What is not visible</h3>
+<table>
+  <tr><th>Artefact</th><th>Where it lives</th><th>Required to read</th></tr>
+  <tr><td>Client secret</td><td>SWA application settings</td><td>Contributor on SWA or higher</td></tr>
+  <tr><td>Certificate private key (after hardening)</td><td>Azure Key Vault</td><td>Key Vault access policy / RBAC role granting Get on certificates and secrets</td></tr>
+  <tr><td>Group Object ID (<code>BOARD_GROUP_ID</code>)</td><td>SWA application settings</td><td>Same as client secret</td></tr>
+  <tr><td>Group membership</td><td>Microsoft Entra ID</td><td>Group reader or owner; member-of for one's own account only</td></tr>
+</table>
+
+<h3>6.3 Threat model summary</h3>
+<table>
+  <tr><th>Threat</th><th>Likelihood</th><th>Impact</th><th>Mitigation</th></tr>
+  <tr><td>Direct request to <code>/api/GetRoles</code> with fabricated claims</td><td>Low</td><td>Would grant arbitrary role</td><td>Platform blocks external HTTP to functions declared as <code>rolesSource</code>; internal-only.</td></tr>
+  <tr><td>Brute-force guessing of <code>BOARD_GROUP_ID</code></td><td>Negligible</td><td>Would only grant access to the configured group, not arbitrary access</td><td>128-bit GUID; computationally infeasible.</td></tr>
+  <tr><td>Client secret leak (screenshot, log, paste)</td><td>Moderate (humans)</td><td>App impersonation; cannot grant <code>boardmember</code> to self directly</td><td>Phase 2 hardening (cert in Key Vault) substantially reduces exposure surface.</td></tr>
+  <tr><td>Phishing of a group member's account</td><td>Moderate</td><td>Attacker can sign in as the member; gains <code>boardmember</code> role</td><td>Conditional Access &mdash; MFA, compliant-device requirements (&sect;7).</td></tr>
+  <tr><td>Compromise of group owner</td><td>Low (with proper Entra hygiene)</td><td>Attacker can add their own account to the group</td><td>Privileged Identity Management (PIM) just-in-time for group ownership; audit alerts on membership changes.</td></tr>
+  <tr><td>Compromise of Entra tenant admin</td><td>Low (with proper Entra hygiene)</td><td>Total compromise of identity surface</td><td>Out of scope for this design; standard tenant-hygiene practices.</td></tr>
+  <tr><td>Public-internet probing / DDoS on sign-in endpoint</td><td>Moderate (continuous)</td><td>Resource consumption, no data exposure</td><td>Phase 3 hardening &mdash; AFD with WAF (&sect;9) or IP restrictions / private endpoint.</td></tr>
+</table>
+</section>
+
+<!-- ========== 7. CONDITIONAL ACCESS ========== -->
+<section class="section" id="ca">
+<h1>7. Conditional Access integration</h1>
+
+<p>The Static Web App and Conditional Access (CA) are decoupled. CA is enforced by Entra ID at sign-in, before any token reaches the SWA. The application is unaware of CA policies; they are configured on the underlying app registration and evaluated by the identity provider.</p>
+
+<div class="mermaid">
+graph LR
+    U((User))
+    E[Entra ID<br/>sign-in endpoint]
+    CA{Conditional<br/>Access policy}
+    INT[Microsoft Intune<br/>device compliance]
+    NL[Named locations<br/>IP allowlist]
+    SWA[Azure SWA<br/>application]
+
+    U -->|credentials| E
+    E -->|evaluate| CA
+    CA -.->|device state| INT
+    CA -.->|client IP| NL
+    CA -- grant --> E
+    CA -- block --> U
+    E -->|token + groups claim| SWA
+    SWA -->|application content| U
+
+    classDef ent fill:#fff7e0,stroke:#f0c14b,color:#5a4500;
+    classDef swa fill:#eef7ff,stroke:#2c5cff,color:#1e3a5e;
+    class E,CA,INT,NL ent;
+    class SWA swa;
+</div>
+<p class="fig-caption">Figure 6. Conditional Access overlays the sign-in step. Failed evaluation never reaches the SWA.</p>
+
+<h3>7.1 Prerequisite licensing</h3>
+<ul>
+  <li><strong>Microsoft Entra ID P1</strong> &mdash; required for Conditional Access. Included with Microsoft 365 Business Premium, E3, E5, and a number of other bundles. Standalone $6/user/month at time of writing.</li>
+  <li><strong>Microsoft Intune</strong> &mdash; required only for the "compliant device" condition. Also included with E3 / E5 / Business Premium.</li>
+</ul>
+
+<h3>7.2 Recommended baseline policy</h3>
+<p>Minimum viable policy that materially raises the security floor:</p>
+
+<div class="kv">
+  <div class="k">Name</div><div>Require MFA for board report site</div>
+  <div class="k">Users &mdash; Include</div><div><code>security-group-board-members</code></div>
+  <div class="k">Users &mdash; Exclude</div><div>At least one break-glass admin account</div>
+  <div class="k">Target resources</div><div>The SWA's Entra app registration</div>
+  <div class="k">Grant</div><div>Require multi-factor authentication</div>
+  <div class="k">Enable</div><div>Report-only initially, then On after verification</div>
+</div>
+
+<h3>7.3 Stronger policies (incremental)</h3>
+<table>
+  <tr><th>Add-on</th><th>What it does</th><th>Prerequisite</th></tr>
+  <tr><td>Require compliant device</td><td>Sign-in fails unless device is Intune-enrolled and meets the compliance baseline (encryption, OS version, anti-malware, etc.)</td><td>Intune licensing + enrolled devices + compliance policies defined</td></tr>
+  <tr><td>Require app protection policy</td><td>Mobile-specific. Requires Intune App Protection enrolment on the user's device</td><td>Intune + Microsoft 365 mobile apps</td></tr>
+  <tr><td>Block legacy authentication</td><td>Disables basic-auth / older protocols that bypass MFA</td><td>None (recommended unconditionally)</td></tr>
+  <tr><td>Trusted location bypass</td><td>Skip MFA when on the corporate network; require it elsewhere</td><td>Named Locations defined with corporate IP ranges</td></tr>
+  <tr><td>Sign-in risk &gt;= medium &rarr; require password change</td><td>Triggers password reset on suspicious sign-ins (impossible travel, anonymous IP, etc.)</td><td>Entra ID P2 for Identity Protection</td></tr>
+</table>
+
+<h3>7.4 What changes in the SWA when CA is added?</h3>
+<p><strong>Nothing.</strong> The website's configuration, code, and behaviour are unchanged. A sign-in that fails CA never produces a token; the SWA's authentication endpoint simply never sees a success and the browser remains on a Microsoft-hosted block page. The website's <code>/403.html</code> is shown only when sign-in succeeds but the resulting roles are insufficient &mdash; this remains the same after CA is introduced.</p>
+</section>
+
+<!-- ========== 8. CI/CD ========== -->
+<section class="section" id="cicd">
+<h1>8. Deployment and CI/CD</h1>
+
+<p>Both Static Web Apps are deployed from a single GitHub repository via the platform-generated GitHub Actions workflows. Each SWA owns its own workflow file, secret, and deployment token. Workflow triggers are path-scoped so that changes to one tier do not redeploy the other.</p>
+
+<div class="mermaid">
+graph LR
+    DEV[Developer]
+    R[GitHub repository<br/>main branch]
+    WF1[Workflow: glacier<br/>paths: free-tier/**]
+    WF2[Workflow: green-sea<br/>paths: standard-tier/**]
+    S1[SWA Free<br/>personal subscription]
+    S2[SWA Standard<br/>org tenant]
+
+    DEV -->|push| R
+    R --> WF1
+    R --> WF2
+    WF1 -- if free-tier/** changed --> S1
+    WF2 -- if standard-tier/** changed --> S2
+
+    classDef gh fill:#f3f4f8,stroke:#1f2937,color:#1f2937;
+    classDef az fill:#eef7ff,stroke:#2c5cff,color:#1e3a5e;
+    class DEV,R,WF1,WF2 gh;
+    class S1,S2 az;
+</div>
+<p class="fig-caption">Figure 7. CI/CD topology. Path filters mean a README-only change triggers neither pipeline; a free-tier asset change deploys only to the Free SWA; a standard-tier code or function change deploys only to the Standard SWA.</p>
+
+<h3>8.1 Workflow generation</h3>
+<p>Each workflow file is generated by the Azure portal at SWA creation time. The portal injects a deployment token as a GitHub repository secret named <code>AZURE_STATIC_WEB_APPS_API_TOKEN_&lt;NAME&gt;</code>. The workflow uses <code>Azure/static-web-apps-deploy@v1</code> to upload the build output. Path filters were added manually after the portal-generated baseline.</p>
+
+<h3>8.2 Operational characteristics</h3>
+<ul>
+  <li><strong>Build time:</strong> 1&ndash;3 minutes for an unchanged-dependencies deployment. The static assets are tiny and the API folder has no native dependencies.</li>
+  <li><strong>Deployment model:</strong> blue-green via SWA's staging environments. Pull requests automatically create a preview environment per the workflow's <code>close_pull_request_job</code>; merging to <code>main</code> rolls the preview to production.</li>
+  <li><strong>Rollback:</strong> revert the offending commit on <code>main</code>. The next push redeploys the previous content. SWA does not maintain historical builds.</li>
+  <li><strong>Branch protection:</strong> not enforced in the reference; production deployments should require a pull-request review and a passing status check before merge to <code>main</code>.</li>
+</ul>
+</section>
+
+<!-- ========== 9. HARDENING ROADMAP ========== -->
+<section class="section" id="hardening">
+<h1>9. Hardening roadmap</h1>
+
+<p>The reference implementation is a starting point. The phases below describe a progression of incremental security improvements, each with a clear marginal cost and benefit. Phase 1 is the current state; Phases 2&ndash;5 are independent &mdash; you can adopt any subset.</p>
+
+<div class="phase">
+  <h3><span class="tag tag-now">Phase 1</span> Reference deployment (as-is)</h3>
+  <p class="summary">Standard-tier SWA, custom Entra app with client secret, GetRoles function, group-based access. No Conditional Access. Public DNS resolves the SWA URL.</p>
+  <ul>
+    <li>Authentication: custom Entra ID, single-tenant.</li>
+    <li>Credential: client secret in SWA application settings.</li>
+    <li>Authorization: <code>boardmember</code> role assigned by GetRoles based on <code>BOARD_GROUP_ID</code>.</li>
+    <li>Network: public internet; basic platform DDoS protection only.</li>
+  </ul>
+  <p class="muted">Suitable for: reference / demo with non-sensitive content.</p>
+</div>
+
+<div class="phase">
+  <h3><span class="tag tag-optional">Phase 2</span> Replace client secret with Key Vault certificate</h3>
+  <p class="summary">Eliminates the plaintext credential from SWA application settings. Cert is generated and held inside Azure Key Vault; the SWA accesses it via a system-assigned managed identity.</p>
+  <ul>
+    <li>Generate certificate in Key Vault. Private key never leaves the vault except into SWA runtime memory.</li>
+    <li>Upload public key (.cer) to the Entra app registration.</li>
+    <li>Grant the SWA's managed identity Get/List on certificates and secrets in Key Vault.</li>
+    <li>Replace <code>clientSecretSettingName</code> with <code>clientSecretCertificateKeyVaultReference</code> in <code>staticwebapp.config.json</code>.</li>
+    <li>Remove the <code>AZURE_CLIENT_SECRET</code> application setting.</li>
+  </ul>
+  <p class="muted">Effort: 30&ndash;60 minutes. Recurring cost: negligible (Key Vault operations are below 100 per month). Suitable for: production with any meaningful confidentiality.</p>
+</div>
+
+<div class="phase">
+  <h3><span class="tag tag-optional">Phase 3</span> Conditional Access policies on the app registration</h3>
+  <p class="summary">Require MFA at minimum. Optionally require a compliant device. Optionally restrict to trusted locations.</p>
+  <ul>
+    <li>Create CA policy targeting the SWA's app registration and the board-members group.</li>
+    <li>Grant: Require MFA. Optionally + compliant device.</li>
+    <li>Roll out in Report-only mode for several days; verify in Insights; then switch to On.</li>
+  </ul>
+  <p class="muted">Effort: 1&ndash;3 days including verification. Recurring cost: Entra ID P1 per user (typically already owned). Intune per user if device compliance is enforced. Suitable for: any deployment with internal organisational users.</p>
+</div>
+
+<div class="phase">
+  <h3><span class="tag tag-optional">Phase 4</span> Network restrictions</h3>
+  <p class="summary">Choose one (or combine):</p>
+  <ul>
+    <li><strong>IP restrictions</strong> (Standard plan, free) &mdash; allow-list up to 25 IP ranges. Blocks all other traffic at the platform.</li>
+    <li><strong>Private endpoint</strong> (Standard plan, free, but requires a VNet) &mdash; SWA URL only resolves from within the connected VNet. Pair with VPN or ExpressRoute for remote users.</li>
+    <li><strong>Azure Front Door Premium with WAF</strong> &mdash; keeps public DNS but filters traffic against the OWASP Core Rule Set, applies rate limiting, geo-blocking, bot protection. Material monthly cost (see &sect;10).</li>
+  </ul>
+  <p class="muted">Effort: half a day to several days depending on option. Recurring cost: zero (IP restrictions / private endpoint) to several hundred dollars per month (AFD Premium). Suitable for: regulated content or content with substantial value.</p>
+</div>
+
+<div class="phase">
+  <h3><span class="tag tag-optional">Phase 5</span> Operational maturity</h3>
+  <p class="summary">Monitoring, alerting, repo hygiene, and incident-response readiness.</p>
+  <ul>
+    <li>Application Insights integration for sign-in telemetry and function logs.</li>
+    <li>Alerts on anomalous sign-in volume, function errors, or role assignment patterns.</li>
+    <li>GitHub: branch protection on <code>main</code>, secret scanning + push protection, periodic rotation of SWA deployment tokens.</li>
+    <li>Entra: enable group-membership audit alerts via Azure Monitor; consider Privileged Identity Management (PIM) for group ownership.</li>
+  </ul>
+  <p class="muted">Effort: 1&ndash;2 days initial, ongoing low effort. Recurring cost: negligible. Suitable for: any deployment expected to last longer than 6 months.</p>
+</div>
+</section>
+
+<!-- ========== 10. COST ========== -->
+<section class="section" id="cost">
+<h1>10. Cost summary</h1>
+
+<p>Prices below are indicative as of 2026 and should be verified against the relevant Microsoft pricing page before commitment.</p>
+
+<table>
+  <tr><th>Component</th><th>Phase 1</th><th>Phase 2</th><th>Phase 3</th><th>Phase 4 (PE)</th><th>Phase 4 (AFD)</th></tr>
+  <tr><td>Azure Static Web App (Free)</td><td>$0</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
+  <tr><td>Azure Static Web App (Standard)</td><td>~$9/site/mo</td><td>~$9</td><td>~$9</td><td>~$9</td><td>~$9</td></tr>
+  <tr><td>Key Vault operations</td><td>&mdash;</td><td>&lt;$0.10/mo</td><td>&lt;$0.10/mo</td><td>&lt;$0.10/mo</td><td>&lt;$0.10/mo</td></tr>
+  <tr><td>Entra ID P1 (per board member)</td><td>&mdash;</td><td>&mdash;</td><td>~$6/user/mo *</td><td>~$6/user/mo *</td><td>~$6/user/mo *</td></tr>
+  <tr><td>Intune (per board member, if compliant-device required)</td><td>&mdash;</td><td>&mdash;</td><td>~$8/user/mo *</td><td>~$8/user/mo *</td><td>~$8/user/mo *</td></tr>
+  <tr><td>Private endpoint</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>~$10/mo + data</td><td>&mdash;</td></tr>
+  <tr><td>Azure Front Door Premium + WAF</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>~$330/mo base + requests</td></tr>
+  <tr><th>Estimated baseline / 10 users</th><th>~$9/mo</th><th>~$9/mo</th><th>$9 + bundle**</th><th>~$20/mo + bundle**</th><th>~$340/mo + bundle**</th></tr>
+</table>
+<p class="small">* Typically included in Microsoft 365 Business Premium, E3, E5 bundles. Many organisations already pay for these for unrelated reasons. ** Bundle: Entra P1 + (optional) Intune, paid per relevant user.</p>
+
+<p class="muted">The free-tier site adds zero direct cost; the only operational cost is the time to manage invitations.</p>
+</section>
+
+<!-- ========== 11. OPERATIONS ========== -->
+<section class="section" id="ops">
+<h1>11. Operations</h1>
+
+<h3>11.1 Onboarding a new user</h3>
+<table>
+  <tr><th>Step</th><th>Free tier</th><th>Standard tier</th></tr>
+  <tr><td>Where</td><td>Azure portal &mdash; SWA &mdash; Role management</td><td>Entra admin centre &mdash; Groups &mdash; security-group-board-members</td></tr>
+  <tr><td>Action</td><td>Generate invitation link for their Microsoft account email; send to the user</td><td>Add user as group member</td></tr>
+  <tr><td>User action required?</td><td>Yes &mdash; click link, sign in, accept</td><td>None &mdash; takes effect on next sign-in</td></tr>
+  <tr><td>Time to live</td><td>Indefinite (until removed)</td><td>Indefinite (until removed)</td></tr>
+</table>
+
+<h3>11.2 Offboarding a user</h3>
+<table>
+  <tr><th>Step</th><th>Free tier</th><th>Standard tier</th></tr>
+  <tr><td>Where</td><td>Role management blade</td><td>Group membership</td></tr>
+  <tr><td>Action</td><td>Tick the user row &rarr; Delete</td><td>Remove user from group</td></tr>
+  <tr><td>Effect on existing session</td><td>None until cookie expires</td><td>None until cookie expires</td></tr>
+  <tr><td>Force-revoke active sessions</td><td>Not available at SWA level</td><td>Entra: Users &mdash; revoke sessions &mdash; forces re-auth on next request</td></tr>
+</table>
+
+<h3>11.3 Credential rotation (Standard, client-secret pattern)</h3>
+<ol>
+  <li>Entra portal &mdash; App registrations &mdash; your app &mdash; Certificates &amp; secrets &mdash; New client secret. Generate with a new expiry; copy the Value.</li>
+  <li>SWA &mdash; Environment variables &mdash; update <code>AZURE_CLIENT_SECRET</code> with the new Value.</li>
+  <li>Verify sign-in works (incognito test).</li>
+  <li>Once verified, return to Entra and delete the old client secret entry.</li>
+</ol>
+
+<h3>11.4 Credential rotation (Standard, certificate pattern)</h3>
+<ol>
+  <li>Key Vault &mdash; Certificates &mdash; your cert &mdash; New version (if auto-rotation is not configured).</li>
+  <li>Download the new .cer from Key Vault.</li>
+  <li>Entra portal &mdash; App registrations &mdash; Certificates &amp; secrets &mdash; Certificates &mdash; Upload the new .cer.</li>
+  <li>Verify sign-in works (incognito test). Because <code>clientSecretCertificateThumbprint</code> is <code>"*"</code>, the runtime auto-picks the latest version.</li>
+  <li>Optionally delete the previous cert version after the verification window.</li>
+</ol>
+
+<h3>11.5 Monitoring</h3>
+<ul>
+  <li>Application Insights connected to the Standard SWA captures GetRoles invocations via <code>context.log(...)</code>. Use this to detect anomalies (unusual user volume, unexpected groupCount values, etc.).</li>
+  <li>Entra sign-in logs (Entra portal &mdash; Sign-in logs) show all sign-in attempts including CA evaluations, MFA outcomes, and policy hits.</li>
+  <li>Configure alerts in Azure Monitor for: function error rate exceeding threshold, sign-in failure rate spikes, unusual geographic sign-in patterns.</li>
+</ul>
+
+<h3>11.6 Disaster scenarios</h3>
+<table>
+  <tr><th>Scenario</th><th>Response</th></tr>
+  <tr><td>Client secret leaked</td><td>1. Revoke the secret in Entra immediately. 2. Generate a new one. 3. Update the SWA application setting. 4. Audit sign-in logs for anomalous activity in the leak window.</td></tr>
+  <tr><td>Tenant admin compromised</td><td>Out of scope for this design; follow organisational IR procedures. Rotate all app credentials and review CA policies once contained.</td></tr>
+  <tr><td>Group owner compromised</td><td>Audit group membership immediately; revoke any unauthorised members; rotate group owner; review sign-in logs for the affected window.</td></tr>
+  <tr><td>SWA misconfigured (e.g., wrong tenant ID in config), no users can sign in</td><td>Revert the offending commit on <code>main</code>; next deploy restores previous state. SWA has no built-in rollback.</td></tr>
+</table>
+</section>
+
+<!-- ========== 12. PLAN LIMITS ========== -->
+<section class="section" id="limits">
+<h1>12. Plan limits</h1>
+
+<p>Source: <em>Azure Static Web Apps quotas</em>, Microsoft Learn.</p>
+
+<table>
+  <tr><th>Limit</th><th>Free</th><th>Standard</th></tr>
+  <tr><td>Bandwidth included per month</td><td>100 GB</td><td>100 GB</td></tr>
+  <tr><td>Overage bandwidth</td><td>Not available (app stops serving until reset)</td><td>$0.20 per GB</td></tr>
+  <tr><td>Apps per subscription</td><td>10</td><td>100</td></tr>
+  <tr><td>Preview environments per app</td><td>3</td><td>10</td></tr>
+  <tr><td>Total storage (all environments)</td><td>500 MB</td><td>2 GB</td></tr>
+  <tr><td>Storage per environment</td><td>250 MB</td><td>500 MB</td></tr>
+  <tr><td>File count per app</td><td>15,000</td><td>15,000</td></tr>
+  <tr><td>Custom domains per app</td><td>2</td><td>6</td></tr>
+  <tr><td>Private endpoint</td><td>Not available</td><td>1</td></tr>
+  <tr><td>IP range restrictions</td><td>Not available</td><td>25</td></tr>
+  <tr><td>Authorisation via invitations</td><td>25 users</td><td>25 users</td></tr>
+  <tr><td>Authorisation via serverless function</td><td>Not available</td><td>Unlimited</td></tr>
+  <tr><td>Max request size</td><td>30 MB</td><td>30 MB</td></tr>
+  <tr><td>SLA</td><td>None</td><td>99.95%</td></tr>
+</table>
+
+<p>Notes:</p>
+<ul>
+  <li>The 25-user invitation cap applies to both plans equally. Standard plan only escapes it by switching to the serverless-function authorisation path.</li>
+  <li>The Free plan never auto-bills. If 100 GB is exceeded in a calendar month, the app stops serving until the next month.</li>
+</ul>
+</section>
+
+<!-- ========== 13. REFERENCES ========== -->
+<section class="section" id="references">
+<h1>13. References</h1>
+
+<h3>Microsoft Learn</h3>
+<ul>
+  <li>Azure Static Web Apps &mdash; Quotas. <code>learn.microsoft.com/en-us/azure/static-web-apps/quotas</code></li>
+  <li>Authenticate and authorize Static Web Apps. <code>learn.microsoft.com/en-us/azure/static-web-apps/authentication-authorization</code></li>
+  <li>Custom authentication in Azure Static Web Apps. <code>learn.microsoft.com/en-us/azure/static-web-apps/authentication-custom</code></li>
+  <li>Configuration (<code>staticwebapp.config.json</code>). <code>learn.microsoft.com/en-us/azure/static-web-apps/configuration</code></li>
+  <li>Tutorial &mdash; Assign roles via Microsoft Graph (group-overage scenario). <code>learn.microsoft.com/en-us/azure/static-web-apps/assign-roles-microsoft-graph</code></li>
+  <li>Pricing &mdash; Static Web Apps. <code>azure.microsoft.com/en-us/pricing/details/app-service/static/</code></li>
+  <li>Azure Front Door &mdash; configure with Static Web Apps. <code>learn.microsoft.com/en-us/azure/static-web-apps/front-door-manual</code></li>
+  <li>Microsoft Entra Conditional Access overview. <code>learn.microsoft.com/en-us/entra/identity/conditional-access/overview</code></li>
+  <li>Microsoft Intune device compliance policies. <code>learn.microsoft.com/en-us/intune/intune-service/protect/device-compliance-get-started</code></li>
+</ul>
+
+<h3>Source repository</h3>
+<p><code>github.com/rmjoia/static-entra-id-auth-example</code> &mdash; contains both tier implementations, GitHub Actions workflows, and a step-by-step README aimed at non-technical implementers.</p>
+
+<h3>Document history</h3>
+<table>
+  <tr><th>Version</th><th>Date</th><th>Notes</th></tr>
+  <tr><td>0.1</td><td>2026-05-15</td><td>Initial draft for internal architecture review.</td></tr>
+</table>
+</section>
+
+<!-- ========== MERMAID INITIALISATION ========== -->
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'default',
+  themeVariables: {
+    primaryColor: '#eef7ff',
+    primaryTextColor: '#1e3a5e',
+    primaryBorderColor: '#2c5cff',
+    lineColor: '#475569',
+    fontSize: '12px'
+  },
+  flowchart: { curve: 'basis', useMaxWidth: true, htmlLabels: true },
+  sequence: { useMaxWidth: true, actorMargin: 70, messageMargin: 35 }
+});
+// Signal to the headless PDF runner that diagrams are ready
+window.addEventListener('load', () => {
+  setTimeout(() => { document.body.dataset.ready = 'true'; }, 1500);
+});
+</script>
+
+</body>
+</html>
