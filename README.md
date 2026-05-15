@@ -41,6 +41,17 @@ You can host both at the same time from this one repo &mdash; each becomes a sep
   - [Step 4: Add the three secret values to the website](#step-4-add-the-three-secret-values-to-the-website)
   - [Step 5: Update one value in the config file](#step-5-update-one-value-in-the-config-file)
   - [Step 6: Try it out](#step-6-try-it-out-standard)
+- [Security model: what's exposed and what's protected](#security-model-whats-exposed-and-whats-protected)
+- [**Hardening: certificate in Key Vault instead of a client secret**](#hardening-certificate-in-key-vault-instead-of-a-client-secret)
+  - [The trade-off](#the-trade-off)
+  - [What it doesn't fix](#what-it-doesnt-fix)
+  - [Steps](#steps)
+- [**Further hardening (optional)**](#further-hardening-optional)
+  - [Azure Front Door with WAF](#azure-front-door-with-waf)
+  - [IP restrictions](#ip-restrictions-standard-plan-only)
+  - [Private endpoint](#private-endpoint-standard-plan-only)
+  - [Monitoring and alerting](#monitoring-and-alerting)
+  - [GitHub repo hygiene](#github-repo-hygiene)
 - [Troubleshooting sign-in](#troubleshooting-sign-in)
 - [Plan limits at a glance](#plan-limits-at-a-glance)
 - [Microsoft documentation](#microsoft-documentation)
@@ -244,6 +255,8 @@ What these are for:
 
 > **Treat the client secret like a password.** Don't commit it to the repo. Don't share it in chat. If it leaks, regenerate it from the app registration's Certificates & secrets blade.
 
+> **There is a stronger option.** For production deployments, you can replace the client secret with a certificate stored in Azure Key Vault, fetched by the SWA's managed identity. The walkthrough above keeps the client-secret approach because it has fewer moving parts; if you want the upgrade, see [Hardening: certificate in Key Vault instead of a client secret](#hardening-certificate-in-key-vault-instead-of-a-client-secret) below.
+
 ---
 
 ### Step 5: Update one value in the config file
@@ -274,6 +287,220 @@ The push triggers an automatic redeploy. After 1&ndash;2 minutes the change is l
 To add a new person to the protected pages: add them to the security group in Entra ID. They'll have access the next time they sign in.
 
 To remove someone: remove them from the group. They'll lose access the next time they sign in (or when their current session expires).
+
+---
+
+## Security model: what's exposed and what's protected
+
+For the Standard-tier deployment, here's what an attacker can see versus what they actually need to break in.
+
+**Publicly visible (in the deployed site, and in the GitHub repo if it's public):**
+
+- The contents of `staticwebapp.config.json` &mdash; route rules, role names (`boardmember`), the tenant ID in the `openIdIssuer` URL, and any Key Vault URI references if you've done the hardening below.
+- The `GetRoles` function source, so the role-assignment logic is public.
+- The list of routes that require authentication (implied by the redirect to `/.auth/login/aad`).
+
+**Not publicly visible:**
+
+- The Entra app registration's **client secret** (or certificate private key, after hardening). These live in SWA app settings or Key Vault, not in any file. Note: SWA refuses to serve `staticwebapp.config.json` itself as a static file &mdash; a request to `https://<site>.azurestaticapps.net/staticwebapp.config.json` returns 404. The file is consumed by the platform at build time, not served at runtime.
+- The `BOARD_GROUP_ID`. It's in SWA app settings, not in the repo.
+- Your group's membership list. Held in Entra ID.
+
+**What an attacker can do with what's visible:**
+
+- Learn which tenant your app belongs to (reconnaissance, not access).
+- Probe the sign-in flow with arbitrary Microsoft accounts; they'll all fail the role check unless they're in the group.
+- Read the role-assignment code and look for edge cases (e.g., what happens if `BOARD_GROUP_ID` is missing &mdash; in the current code, nobody gets `boardmember`; safe default).
+
+**What they can't do without separately compromising something else:**
+
+- Impersonate the SWA app to Microsoft &mdash; requires the client secret or the certificate's private key.
+- Grant themselves the `boardmember` role &mdash; requires either an Entra tenant admin or write access to the security group.
+- Read the protected pages without being in the security group.
+
+The tenant ID exposure deserves its own note. Microsoft treats tenant IDs as "discoverable, not secret" &mdash; knowing one alone doesn't grant access. If you want to keep it out of the config file anyway, you'd have to switch to the OIDC-provider config (`wellKnownOpenIdConfiguration` pointing at a URL you control), which is more setup for marginal benefit and isn't covered here.
+
+---
+
+## Hardening: certificate in Key Vault instead of a client secret
+
+The Standard-tier walkthrough above uses a **client secret** to authenticate the SWA to your Entra app registration. That works, but the secret is a static string sitting in `AZURE_CLIENT_SECRET` in your SWA's app settings. This section walks through replacing it with a **certificate stored in Azure Key Vault**, fetched by the SWA's managed identity at runtime.
+
+### The trade-off
+
+| | Client secret | Certificate in Key Vault |
+|---|---|---|
+| Where the credential lives | Plaintext in SWA app settings | Encrypted in Key Vault; SWA pulls it via its managed identity |
+| Who can read it | Anyone with Contributor on the SWA or higher | Only identities explicitly granted access on the Key Vault |
+| Audit trail of credential access | None &mdash; Azure does not log app-settings reads | Key Vault logs every read, with caller identity |
+| How it's presented to Microsoft at sign-in | A string in the token-exchange request | A short-lived JWT assertion signed by the private key; the assertion expires in minutes |
+| Replay window if intercepted | Until next rotation (months) | Minutes |
+| Rotation | Generate new, swap app setting, redeploy | Upload new cert to Key Vault and Entra; old one keeps working until you delete it |
+| Common failure mode | Pasted into a screenshot, log, or chat | Hard to leak by accident &mdash; a KV URI is useless without KV access |
+
+In one sentence: the cert path removes the standing plaintext credential that's the most common cause of accidental leaks, and it gives you logs of who fetched the credential and when.
+
+### What it doesn't fix
+
+Be honest about what this is and isn't:
+
+- **Doesn't help if your SWA's runtime is compromised.** The runtime needs the private key in memory to function. An attacker with code execution inside the SWA can extract it either way.
+- **Doesn't help against a compromised Entra tenant admin.** They can generate new credentials, replace the app, or sign in as someone with the role.
+- **Doesn't extend credential lifetime.** Certs expire too (typically 12&ndash;24 months). You still need rotation discipline; Key Vault just makes it easier to schedule and audit.
+- **Adds moving parts.** Key Vault outages, managed identity misconfigurations, and access-policy mistakes are now possible failure modes.
+
+For a 10-person board demo: skip it. For anything with real confidential data or a security-review process: do it.
+
+### Steps
+
+You'll need a Key Vault in the same subscription as the Standard-tier SWA. Create one if you don't have one &mdash; **Key Vaults &rarr; + Create** in the Azure portal, defaults are fine for this.
+
+#### 1. Generate the certificate in Key Vault
+
+Letting Key Vault generate the cert means the private key never leaves the vault.
+
+1. Open your Key Vault &rarr; **Certificates** &rarr; **+ Generate/Import**.
+2. **Method of certificate creation**: **Generate**.
+3. **Certificate name**: e.g., `swa-standard-tier-cert`.
+4. **Type of certificate authority**: **Self-signed certificate**. (A public CA is overkill for app-to-app auth.)
+5. **Subject**: `CN=swa-standard-tier-cert` (the subject doesn't affect auth; pick something recognisable).
+6. **Validity period**: 12 or 24 months.
+7. **Content type**: **PKCS #12**.
+8. **Lifetime action**: **Email contacts at percentage lifetime** &rarr; 80%. Sends you a reminder before expiry.
+9. **Create**.
+
+After a few seconds the certificate appears with one version. Click into the version &rarr; **Download in CER format**. Save that `.cer` file &mdash; you'll upload it to Entra in the next step.
+
+#### 2. Upload the public key to the Entra app registration
+
+1. Microsoft Entra ID &rarr; **App registrations** &rarr; your app &rarr; **Certificates & secrets** &rarr; **Certificates** tab &rarr; **Upload certificate**.
+2. Pick the `.cer` file you just downloaded.
+3. **Add**.
+
+You can leave the existing client secret in place for now &mdash; both can be valid at the same time, which makes the cutover reversible.
+
+#### 3. Enable a managed identity on the SWA
+
+1. Your Standard SWA &rarr; **Identity** in the left menu.
+2. **System assigned** tab &rarr; toggle **Status** to **On** &rarr; **Save**.
+3. Confirm. Azure creates a system-assigned managed identity for the SWA. Copy the **Object (principal) ID** that appears &mdash; you'll grant it permission to Key Vault next.
+
+#### 4. Grant the SWA's managed identity access to the certificate
+
+In your Key Vault, give the SWA's managed identity permission to read certificates and the underlying secret material:
+
+**If your Key Vault uses access policies** (look for an **Access policies** blade in the left menu):
+
+1. Key Vault &rarr; **Access policies** &rarr; **+ Create**.
+2. **Permissions**:
+   - **Certificate permissions**: tick **Get** and **List**.
+   - **Secret permissions**: tick **Get** and **List**. (Both are needed: SWA reads the cert metadata and the private-key portion stored as a secret.)
+3. **Principal**: search for your SWA's name and pick its managed identity.
+4. **Create**, then **Save** at the top.
+
+**If your Key Vault uses RBAC** (look for **Access configuration** showing "Azure role-based access control"):
+
+1. Key Vault &rarr; **Access control (IAM)** &rarr; **+ Add role assignment**.
+2. Assign **Key Vault Certificate User** to the SWA's managed identity.
+3. Assign **Key Vault Secrets User** to the SWA's managed identity.
+
+#### 5. Update `standard-tier/src/staticwebapp.config.json`
+
+Replace `clientSecretSettingName` with two new lines pointing at the Key Vault certificate. The `registration` block should look like this:
+
+```jsonc
+"registration": {
+  "openIdIssuer": "https://login.microsoftonline.com/<TENANT_ID>/v2.0",
+  "clientIdSettingName": "AZURE_CLIENT_ID",
+  "clientSecretCertificateKeyVaultReference": "@Microsoft.KeyVault(SecretUri=https://<KEY_VAULT_NAME>.vault.azure.net/certificates/<CERTIFICATE_NAME>/)",
+  "clientSecretCertificateThumbprint": "*"
+}
+```
+
+- Replace `<KEY_VAULT_NAME>` and `<CERTIFICATE_NAME>` with your real values.
+- Leave the trailing `/` after the cert name. With no version ID, the runtime always picks the latest version &mdash; useful for auto-rotation.
+- `"*"` for the thumbprint tells SWA "always trust whatever the latest cert is".
+
+Commit and push. The push triggers a redeploy.
+
+#### 6. Remove the now-unused client secret
+
+1. SWA &rarr; **Environment variables** &rarr; delete `AZURE_CLIENT_SECRET`.
+2. Optionally, in the Entra app registration &rarr; **Certificates & secrets** &rarr; **Client secrets** tab, delete the old secret too.
+
+#### 7. Test sign-in
+
+Open an incognito window, visit the site, click a protected page, sign in. If `/.auth/me` shows your usual roles, you're done. The platform fetched the cert from Key Vault, signed an assertion with the private key, and Entra accepted it.
+
+If sign-in fails:
+
+- Managed identity not granted Key Vault access (Step 4) &mdash; check the access policy or RBAC assignment.
+- Key Vault URI typo &mdash; it's `vault.azure.net`, not `azure.net`.
+- Mismatch between the cert in Key Vault and the one uploaded to Entra &mdash; download the latest from Key Vault and re-upload to Entra.
+
+---
+
+## Further hardening (optional)
+
+These are upgrades that go beyond authentication and into broader platform security. None are required for the example to work; pick the ones that match the value of what you're hosting.
+
+### Azure Front Door with WAF
+
+Azure Static Web Apps has basic platform-level DDoS protection but no Web Application Firewall (WAF). For higher-value sites, put the SWA behind **Azure Front Door Premium** with WAF enabled:
+
+- Filters traffic against the OWASP Core Rule Set (SQL injection, XSS, common attack patterns) before it reaches the SWA.
+- Rate-limits per IP or per geography.
+- Lets you geo-block traffic from countries you don't operate in.
+- Improves global latency via edge caching of the public landing page.
+
+Microsoft tutorial: [Configure Azure Front Door for Azure Static Web Apps](https://learn.microsoft.com/en-us/azure/static-web-apps/front-door-manual).
+
+Trade-off: AFD Premium has its own ongoing cost (hundreds of dollars per month for typical low-traffic sites, see the [Front Door pricing page](https://azure.microsoft.com/en-us/pricing/details/frontdoor/)). Only worth it when the data you're protecting is worth more than that. For a board-report site of 10 people: overkill. For anything regulated, brand-sensitive, or holding non-public M&amp;A material: justified.
+
+### IP restrictions (Standard plan only)
+
+If your audience all sits inside known IP ranges (an office network, a corporate VPN, a partner allowlist), block everything else at the platform:
+
+- SWA resource &rarr; **Networking** &rarr; **Inbound access** &rarr; allow specific IP ranges only.
+- Up to **25 ranges per app** (Standard plan limit).
+- Blocked traffic never reaches the auth flow, so bots probing sign-in never even cost you a token-exchange request.
+
+Free plan does not support this.
+
+### Private endpoint (Standard plan only)
+
+If the site is for **internal-only** consumption (intranet, partner via VPN), make the SWA accessible only from inside a private VNet:
+
+- SWA resource &rarr; **Networking** &rarr; **Private endpoint** &rarr; create.
+- After this, the public `*.azurestaticapps.net` URL stops resolving for the open internet.
+- Pair with Azure VPN, ExpressRoute, or AFD with a private origin.
+
+Free plan does not support this.
+
+### Monitoring and alerting
+
+Plug the SWA into **Application Insights** to get telemetry on sign-in attempts, errors, and unusual patterns:
+
+- SWA &rarr; **Application Insights** &rarr; connect or create a new resource.
+- The `GetRoles` function automatically writes to Application Insights logs (the `context.log(...)` line).
+- Add alerts for sign-in spikes, sustained error rates, or unexpected access attempts.
+
+Costs are negligible at the traffic levels this kind of site sees.
+
+### GitHub repo hygiene
+
+If the repo holds your config, the repo's security matters too:
+
+- Make the repo **private** if it contains anything you don't want indexed.
+- Require **pull-request reviews on `main`**: Settings &rarr; Branches &rarr; **Branch protection rules**.
+- Enable **secret scanning** and **push protection** (free for public repos, paid feature for private ones in some plans). Catches accidental commits of credentials.
+- Rotate the SWA **deployment tokens** periodically: SWA &rarr; **Overview** &rarr; **Manage deployment token** &rarr; **Reset token**, then update the corresponding repository secret in GitHub.
+
+### What's intentionally not in this list
+
+- **Rate limiting on `/.auth/login/aad` directly**: not configurable on SWA itself. Needs AFD or another reverse proxy in front.
+- **Custom sign-in UI branding**: not exposed by SWA. Brand via Entra ID's app registration **Branding** blade.
+- **Multi-factor authentication enforcement**: not at the SWA. Enforce in Entra ID at the tenant level or via Conditional Access.
 
 ---
 
